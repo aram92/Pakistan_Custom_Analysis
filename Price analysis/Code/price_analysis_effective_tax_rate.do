@@ -386,6 +386,150 @@
 
 	gen dec_per_tax_price=(dec_tax_USD/imports_USD)*100
 
-
-
 	save "$intermediate_data/Price_data_2907_taxes.dta", replace
+
+	* Create means by HS code
+	bys hs_code: egen av_cust_duty_levies = mean(cust_duty_levies)
+	bys hs_code: egen av_taxes = mean(taxes)
+	bys hs_code: egen av_extra_taxes = mean(extra_taxes)
+	bys hs_code: egen av_total_taxes = mean(total_taxes)
+	bys hs_code: egen av_decl_cust = mean(decl_cust)
+	bys hs_code: egen av_decl_taxes = mean(decl_taxes)
+	bys hs_code: egen av_decl_extra_taxes = mean(decl_extra_taxes)
+	bys hs_code: egen av_decl_total = mean(decl_total)
+
+	* Create SDs by HS code
+	bys hs_code: egen sd_cust_duty_levies = sd(cust_duty_levies)
+	bys hs_code: egen sd_taxes = sd(taxes)
+	bys hs_code: egen sd_extra_taxes = sd(extra_taxes)
+	bys hs_code: egen sd_total_taxes = sd(total_taxes)
+	bys hs_code: egen sd_decl_cust = sd(decl_cust)
+	bys hs_code: egen sd_decl_taxes = sd(decl_taxes)
+	bys hs_code: egen sd_decl_extra_taxes = sd(decl_extra_taxes)
+	bys hs_code: egen sd_decl_total = sd(decl_total)
+
+	* Create SE by HS code
+	by hs_code: gen se_cust_duty_levies=sd_cust_duty_levies/sqrt(_N)
+	by hs_code: gen se_taxes=sd_taxes/sqrt(_N)
+	by hs_code: gen se_extra_taxes=sd_extra_taxes/sqrt(_N)
+	by hs_code: gen se_total_taxes=sd_total_taxes/sqrt(_N)
+	by hs_code: gen se_decl_cust=sd_decl_cust/sqrt(_N)
+	by hs_code: gen se_decl_taxes=sd_decl_taxes/sqrt(_N)
+	by hs_code: gen se_decl_extra_taxes=decl_extra_taxes/sqrt(_N)
+	by hs_code: gen se_decl_total=sd_decl_total/sqrt(_N)
+
+	* Create Lower bound for CI by HS code using 95% CI
+	bys hs_code: gen ci95_lower_cust= av_cust_duty_levies - (1.96 * se_cust_duty_levies)
+	bys hs_code: gen ci95_lower_taxes= av_taxes - (1.96 * se_taxes)
+	bys hs_code: gen ci95_lower_extra= av_extra_taxes - (1.96 * se_extra_taxes)
+	bys hs_code: gen ci95_lower_total= av_total_taxes - (1.96 * se_total_taxes)
+	bys hs_code: gen ci95_lower_dcust= av_decl_cust - (1.96 * se_decl_cust)
+	bys hs_code: gen ci95_lower_dtaxes= av_decl_taxes - (1.96 * se_decl_taxes)
+	bys hs_code: gen ci95_lower_dextra= av_decl_extra_taxes - (1.96 * se_decl_extra_taxes)
+	bys hs_code: gen ci95_lower_dtotal= av_decl_total - (1.96 * se_decl_total)
+
+	* Create Upper bound for CI by HS code using 95% CI
+	bys hs_code: gen ci95_upper_cust= av_cust_duty_levies + (1.96 * se_cust_duty_levies)
+	bys hs_code: gen ci95_upper_taxes= av_taxes + (1.96 * se_taxes)
+	bys hs_code: gen ci95_upper_extra= av_extra_taxes + (1.96 * se_extra_taxes)
+	bys hs_code: gen ci95_upper_total= av_total_taxes + (1.96 * se_total_taxes)
+	bys hs_code: gen ci95_upper_dcust= av_decl_cust + (1.96 * se_decl_cust)
+	bys hs_code: gen ci95_upper_dtaxes= av_decl_taxes + (1.96 * se_decl_taxes)
+	bys hs_code: gen ci95_upper_dextra= av_decl_extra_taxes + (1.96 * se_decl_extra_taxes)
+	bys hs_code: gen ci95_upper_dtotal= av_decl_total + (1.96 * se_decl_total)
+	
+	* Create variable for ouliers using 95% CI
+	gen outliers95_cust=1
+	gen outliers95_taxest=1
+	gen outliers95_extra=1
+	gen outliers95_total=1
+	gen outliers95_dcust=1
+	gen outliers95_dtaxes=1
+	gen outliers95_dextra=1
+	gen outliers95_dtotal=1
+
+	* Remove from outliers the values within the 95% CI
+	replace outliers95_cust=0 if ci95_lower_cust<cust_duty_levies<ci95_upper_cust
+	replace outliers95_taxest=0 if ci95_lower_taxes<taxes<ci95_upper_taxes
+	replace outliers95_extra=0 if ci95_lower_extra<extra_taxes<ci95_upper_extra
+	replace outliers95_total=0 if ci95_lower_total<total_taxes<ci95_upper_total
+	replace outliers95_dcust=0 if ci95_lower_dcust<decl_cust<ci95_upper_dcust
+	replace outliers95_dtaxes=0 if ci95_lower_dtaxes<decl_taxes<ci95_upper_dtaxes
+	replace outliers95_dextra=0 if ci95_lower_dextra<decl_extra_taxes<ci95_upper_dextra
+	replace outliers95_dtotal=0 if ci95_lower_dtotal<decl_total<ci95_upper_dtotal
+	
+	* Determine the % of outliers (95% CI)
+	ta outliers95_cust
+//	0.09% outliers (above)
+	ta outliers95_taxes
+//	0.03% outliers (above)
+	ta outliers95_extra
+//	0.11% outliers (above)
+	ta outliers95_total
+//	0.03% outliers (above)
+	ta outliers95_dcust
+//	0.11% outliers (above)
+	ta outliers95_dtaxes
+//	0.03% outliers (above)
+	ta outliers95_dextra
+//	0.09% outliers (above)
+	ta outliers95_dtotal
+//	0.03% outliers (above)
+
+	* Create Lower bound for CI by HS code using 3SD
+	bys hs_code: gen sd3_lower_cust= av_cust_duty_levies - (3 * sd_cust_duty_levies)
+	bys hs_code: gen sd3_lower_taxes= av_taxes - (3 * sd_taxes)
+	bys hs_code: gen sd3_lower_extra= av_extra_taxes - (3 * sd_extra_taxes)
+	bys hs_code: gen sd3_lower_total= av_total_taxes - (3 * sd_total_taxes)
+	bys hs_code: gen sd3_lower_dcust= av_decl_cust - (3 * sd_decl_cust)
+	bys hs_code: gen sd3_lower_dtaxes= av_decl_taxes - (3 * sd_decl_taxes)
+	bys hs_code: gen sd3_lower_dextra= av_decl_extra_taxes - (3 * sd_decl_extra_taxes)
+	bys hs_code: gen sd3_lower_dtotal= av_decl_total - (3 * sd_decl_total)
+
+	* Create Upper bound for CI by HS code using 3SD
+	bys hs_code: gen sd3_upper_cust= av_cust_duty_levies + (3 * sd_cust_duty_levies)
+	bys hs_code: gen sd3_upper_taxes= av_taxes + (3 * sd_taxes)
+	bys hs_code: gen sd3_upper_extra= av_extra_taxes + (3 * sd_extra_taxes)
+	bys hs_code: gen sd3_upper_total= av_total_taxes + (3 * sd_total_taxes)
+	bys hs_code: gen sd3_upper_dcust= av_decl_cust + (3 * sd_decl_cust)
+	bys hs_code: gen sd3_upper_dtaxes= av_decl_taxes + (3 * sd_decl_taxes)
+	bys hs_code: gen sd3_upper_dextra= av_decl_extra_taxes + (3 * sd_decl_extra_taxes)
+	bys hs_code: gen sd3_upper_dtotal= av_decl_total + (3 * sd_decl_total)
+	
+	* Create variable for outliers using 3SD
+	gen outliers_sd3_cust=1
+	gen outliers_sd3_taxest=1
+	gen outliers_sd3_extra=1
+	gen outliers_sd3_total=1
+	gen outliers_sd3_dcust=1
+	gen outliers_sd3_dtaxes=1
+	gen outliers_sd3_dextra=1
+	gen outliers_sd3_dtotal=1
+
+	* Remove from outliers the values within 3SD
+	replace outliers_sd3_cust=0 if sd3_lower_cust<cust_duty_levies<sd3_upper_cust
+	replace outliers_sd3_taxest=0 if sd3_lower_taxes<taxes<sd3_upper_taxes
+	replace outliers_sd3_extra=0 if sd3_lower_extra<extra_taxes<sd3_upper_extra
+	replace outliers_sd3_total=0 if sd3_lower_total<total_taxes<sd3_upper_total
+	replace outliers_sd3_dcust=0 if sd3_lower_dcust<decl_cust<sd3_upper_dcust
+	replace outliers_sd3_dtaxes=0 if sd3_lower_dtaxes<decl_taxes<sd3_upper_dtaxes
+	replace outliers_sd3_dextra=0 if sd3_lower_dextra<decl_extra_taxes<sd3_upper_dextra
+	replace outliers_sd3_dtotal=0 if sd3_lower_dtotal<decl_total<sd3_upper_dtotal
+	
+	* Determine the % of outliers (3SD)
+	ta outliers_sd3_cust
+//
+	ta outliers_sd3_taxes
+//
+	ta outliers_sd3_extra
+//
+	ta outliers_sd3_total
+//
+	ta outliers_sd3_dcust
+//
+	ta outliers_sd3_dtaxes
+//
+	ta outliers_sd3_dextra
+//
+	ta outliers_sd3_dtotal
+//
