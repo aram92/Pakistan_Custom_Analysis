@@ -16,7 +16,7 @@
 
        ** WRITEN BY:    Alice Duhaut, Kaustubh Chahande, Aram Gassama
 
-       ** Last date modified:  29 July 2019
+       ** Last date modified:  30 July 2019
       
 	 
 * ******************************************************************** *
@@ -203,6 +203,110 @@
 	* In this case we have 1.07% outliers
 	
 	save "$intermediate_data/Price_data_2907_outliers.dta", replace 
+	
+	* Determine the % of outliers
+	ta outliers_3sd
+	
+	* Label the variables year and month
+	label variable year "Year"
+	label variable month "Month"
+	label define month_names 1 "Jan" 2 "Feb" 3 "Mar" 4 "Apr" 5 "May" 6 "Jun" ///
+							 7 "Jul" 8 "Aug" 9 "Sep" 10 "Oct" 11 "Nov" 12 "Dec"
+	label values month month_names
+	
+	* Check the distribution and availability of data
+	ta month year
+	* No observations for July-December 2018
+
+	* Check distribution of outliers over month-year
+	bysort year: tab outliers month
+	bysort year: tab outliers_3sd month
+	
+	* Create graph of # of outliers per HS code using 95% CI, by month & year
+	graph hbar (count) outliers if outliers==1, over(month) ///
+				ytitle("") ///
+				yscale(range(6400)) ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+	
+	* Create graph of # of outliers per HS code using 3SD, by month & year
+	graph hbar (count) outliers_3sd if outliers_3sd==1, over(month) ///
+				ytitle("") ///
+				yscale(range(6400)) ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 3SD, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+	* Create monthly means 
+	bys year month: egen av_unitprice_monthyr=mean(unit_price_USD)
+
+	* Create deviation from the mean by month
+	bys year month: gen dev_mean_monthyr=unit_price_USD - av_unitprice_monthyr
+
+	* Create percentage of deviation from the monthly means
+	bys year month: gen per_dev_monthyr= dev_mean_month/av_unitprice_monthyr
+	
+	* Create sum of absolute values of percentage of deviation from the monthly mean
+	bys year month: egen sum_dev_monthyr = sum(abs(per_dev_monthyr))
+	
+	* Create bar plot of sum of absolute value of % deviations from the mean per month
+	graph hbar sum_dev_monthyr, over(month) ///
+				ytitle("") ///
+				ylabel(#3, format(%9.00fc)) ///
+				by(year, title("Sum of absolute value of % deviations from the mean per month") ///
+				subtitle("by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.00fc) color(black))
+
+	* Create index for shed names & then a facet variable for the following graph
+	egen shed_index = group(shed_name)
+	gen shed_facet = 1 if shed_index<14 & shed_index !=.
+	replace shed_facet = 2 if shed_index>13 & shed_index<27 & shed_index !=.
+	replace shed_facet = 3 if shed_index>26 & shed_index<40 & shed_index !=.
+	replace shed_facet = 4 if shed_index>39 & shed_index !=.
+
+	* Create graph of # of outliers per shed using 95% CI
+	graph hbar (count) outliers if outliers==1, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(shed_facet, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by Shed") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				ysize(20)
+				
+	* Create graph of # of outliers per shed using 3SD
+	graph hbar (count) outliers_3sd if outliers_3sd==1, over(shed_name) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(shed_facet, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by Shed") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+				
+	* Create graph of # of outliers per country using 95% CI
+	graph hbar (count) outliers if outliers==1, over(co) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by Country") ///
+				note("Note: There are no observations for July-December 2018.") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+				
+	* Create graph of # of outliers per HS2 code using 95% CI				
+	graph hbar (count) outliers if outliers==1, over(hs2) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by HS2 codes") ///
+				note("Note: There are no observations for July-December 2018.") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
 
 
 * ---------------------------------------------------------------------------- *
@@ -282,6 +386,150 @@
 
 	gen dec_per_tax_price=(dec_tax_USD/imports_USD)*100
 
-
-
 	save "$intermediate_data/Price_data_2907_taxes.dta", replace
+
+	* Create means by HS code
+	bys hs_code: egen av_cust_duty_levies = mean(cust_duty_levies)
+	bys hs_code: egen av_taxes = mean(taxes)
+	bys hs_code: egen av_extra_taxes = mean(extra_taxes)
+	bys hs_code: egen av_total_taxes = mean(total_taxes)
+	bys hs_code: egen av_decl_cust = mean(decl_cust)
+	bys hs_code: egen av_decl_taxes = mean(decl_taxes)
+	bys hs_code: egen av_decl_extra_taxes = mean(decl_extra_taxes)
+	bys hs_code: egen av_decl_total = mean(decl_total)
+
+	* Create SDs by HS code
+	bys hs_code: egen sd_cust_duty_levies = sd(cust_duty_levies)
+	bys hs_code: egen sd_taxes = sd(taxes)
+	bys hs_code: egen sd_extra_taxes = sd(extra_taxes)
+	bys hs_code: egen sd_total_taxes = sd(total_taxes)
+	bys hs_code: egen sd_decl_cust = sd(decl_cust)
+	bys hs_code: egen sd_decl_taxes = sd(decl_taxes)
+	bys hs_code: egen sd_decl_extra_taxes = sd(decl_extra_taxes)
+	bys hs_code: egen sd_decl_total = sd(decl_total)
+
+	* Create SE by HS code
+	by hs_code: gen se_cust_duty_levies=sd_cust_duty_levies/sqrt(_N)
+	by hs_code: gen se_taxes=sd_taxes/sqrt(_N)
+	by hs_code: gen se_extra_taxes=sd_extra_taxes/sqrt(_N)
+	by hs_code: gen se_total_taxes=sd_total_taxes/sqrt(_N)
+	by hs_code: gen se_decl_cust=sd_decl_cust/sqrt(_N)
+	by hs_code: gen se_decl_taxes=sd_decl_taxes/sqrt(_N)
+	by hs_code: gen se_decl_extra_taxes=decl_extra_taxes/sqrt(_N)
+	by hs_code: gen se_decl_total=sd_decl_total/sqrt(_N)
+
+	* Create Lower bound for CI by HS code using 95% CI
+	bys hs_code: gen ci95_lower_cust= av_cust_duty_levies - (1.96 * se_cust_duty_levies)
+	bys hs_code: gen ci95_lower_taxes= av_taxes - (1.96 * se_taxes)
+	bys hs_code: gen ci95_lower_extra= av_extra_taxes - (1.96 * se_extra_taxes)
+	bys hs_code: gen ci95_lower_total= av_total_taxes - (1.96 * se_total_taxes)
+	bys hs_code: gen ci95_lower_dcust= av_decl_cust - (1.96 * se_decl_cust)
+	bys hs_code: gen ci95_lower_dtaxes= av_decl_taxes - (1.96 * se_decl_taxes)
+	bys hs_code: gen ci95_lower_dextra= av_decl_extra_taxes - (1.96 * se_decl_extra_taxes)
+	bys hs_code: gen ci95_lower_dtotal= av_decl_total - (1.96 * se_decl_total)
+
+	* Create Upper bound for CI by HS code using 95% CI
+	bys hs_code: gen ci95_upper_cust= av_cust_duty_levies + (1.96 * se_cust_duty_levies)
+	bys hs_code: gen ci95_upper_taxes= av_taxes + (1.96 * se_taxes)
+	bys hs_code: gen ci95_upper_extra= av_extra_taxes + (1.96 * se_extra_taxes)
+	bys hs_code: gen ci95_upper_total= av_total_taxes + (1.96 * se_total_taxes)
+	bys hs_code: gen ci95_upper_dcust= av_decl_cust + (1.96 * se_decl_cust)
+	bys hs_code: gen ci95_upper_dtaxes= av_decl_taxes + (1.96 * se_decl_taxes)
+	bys hs_code: gen ci95_upper_dextra= av_decl_extra_taxes + (1.96 * se_decl_extra_taxes)
+	bys hs_code: gen ci95_upper_dtotal= av_decl_total + (1.96 * se_decl_total)
+	
+	* Create variable for ouliers using 95% CI
+	gen outliers95_cust=1
+	gen outliers95_taxest=1
+	gen outliers95_extra=1
+	gen outliers95_total=1
+	gen outliers95_dcust=1
+	gen outliers95_dtaxes=1
+	gen outliers95_dextra=1
+	gen outliers95_dtotal=1
+
+	* Remove from outliers the values within the 95% CI
+	replace outliers95_cust=0 if ci95_lower_cust<cust_duty_levies<ci95_upper_cust
+	replace outliers95_taxest=0 if ci95_lower_taxes<taxes<ci95_upper_taxes
+	replace outliers95_extra=0 if ci95_lower_extra<extra_taxes<ci95_upper_extra
+	replace outliers95_total=0 if ci95_lower_total<total_taxes<ci95_upper_total
+	replace outliers95_dcust=0 if ci95_lower_dcust<decl_cust<ci95_upper_dcust
+	replace outliers95_dtaxes=0 if ci95_lower_dtaxes<decl_taxes<ci95_upper_dtaxes
+	replace outliers95_dextra=0 if ci95_lower_dextra<decl_extra_taxes<ci95_upper_dextra
+	replace outliers95_dtotal=0 if ci95_lower_dtotal<decl_total<ci95_upper_dtotal
+	
+	* Determine the % of outliers (95% CI)
+	ta outliers95_cust
+//	0.09% outliers (above)
+	ta outliers95_taxes
+//	0.03% outliers (above)
+	ta outliers95_extra
+//	0.11% outliers (above)
+	ta outliers95_total
+//	0.03% outliers (above)
+	ta outliers95_dcust
+//	0.11% outliers (above)
+	ta outliers95_dtaxes
+//	0.03% outliers (above)
+	ta outliers95_dextra
+//	0.09% outliers (above)
+	ta outliers95_dtotal
+//	0.03% outliers (above)
+
+	* Create Lower bound for CI by HS code using 3SD
+	bys hs_code: gen sd3_lower_cust= av_cust_duty_levies - (3 * sd_cust_duty_levies)
+	bys hs_code: gen sd3_lower_taxes= av_taxes - (3 * sd_taxes)
+	bys hs_code: gen sd3_lower_extra= av_extra_taxes - (3 * sd_extra_taxes)
+	bys hs_code: gen sd3_lower_total= av_total_taxes - (3 * sd_total_taxes)
+	bys hs_code: gen sd3_lower_dcust= av_decl_cust - (3 * sd_decl_cust)
+	bys hs_code: gen sd3_lower_dtaxes= av_decl_taxes - (3 * sd_decl_taxes)
+	bys hs_code: gen sd3_lower_dextra= av_decl_extra_taxes - (3 * sd_decl_extra_taxes)
+	bys hs_code: gen sd3_lower_dtotal= av_decl_total - (3 * sd_decl_total)
+
+	* Create Upper bound for CI by HS code using 3SD
+	bys hs_code: gen sd3_upper_cust= av_cust_duty_levies + (3 * sd_cust_duty_levies)
+	bys hs_code: gen sd3_upper_taxes= av_taxes + (3 * sd_taxes)
+	bys hs_code: gen sd3_upper_extra= av_extra_taxes + (3 * sd_extra_taxes)
+	bys hs_code: gen sd3_upper_total= av_total_taxes + (3 * sd_total_taxes)
+	bys hs_code: gen sd3_upper_dcust= av_decl_cust + (3 * sd_decl_cust)
+	bys hs_code: gen sd3_upper_dtaxes= av_decl_taxes + (3 * sd_decl_taxes)
+	bys hs_code: gen sd3_upper_dextra= av_decl_extra_taxes + (3 * sd_decl_extra_taxes)
+	bys hs_code: gen sd3_upper_dtotal= av_decl_total + (3 * sd_decl_total)
+	
+	* Create variable for outliers using 3SD
+	gen outliers_sd3_cust=1
+	gen outliers_sd3_taxest=1
+	gen outliers_sd3_extra=1
+	gen outliers_sd3_total=1
+	gen outliers_sd3_dcust=1
+	gen outliers_sd3_dtaxes=1
+	gen outliers_sd3_dextra=1
+	gen outliers_sd3_dtotal=1
+
+	* Remove from outliers the values within 3SD
+	replace outliers_sd3_cust=0 if sd3_lower_cust<cust_duty_levies<sd3_upper_cust
+	replace outliers_sd3_taxest=0 if sd3_lower_taxes<taxes<sd3_upper_taxes
+	replace outliers_sd3_extra=0 if sd3_lower_extra<extra_taxes<sd3_upper_extra
+	replace outliers_sd3_total=0 if sd3_lower_total<total_taxes<sd3_upper_total
+	replace outliers_sd3_dcust=0 if sd3_lower_dcust<decl_cust<sd3_upper_dcust
+	replace outliers_sd3_dtaxes=0 if sd3_lower_dtaxes<decl_taxes<sd3_upper_dtaxes
+	replace outliers_sd3_dextra=0 if sd3_lower_dextra<decl_extra_taxes<sd3_upper_dextra
+	replace outliers_sd3_dtotal=0 if sd3_lower_dtotal<decl_total<sd3_upper_dtotal
+	
+	* Determine the % of outliers (3SD)
+	ta outliers_sd3_cust
+//
+	ta outliers_sd3_taxes
+//
+	ta outliers_sd3_extra
+//
+	ta outliers_sd3_total
+//
+	ta outliers_sd3_dcust
+//
+	ta outliers_sd3_dtaxes
+//
+	ta outliers_sd3_dextra
+//
+	ta outliers_sd3_dtotal
+//
