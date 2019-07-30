@@ -203,6 +203,110 @@
 	* In this case we have 1.07% outliers
 	
 	save "$intermediate_data/Price_data_2907_outliers.dta", replace 
+	
+	* Determine the % of outliers
+	ta outliers_3sd
+	
+	* Label the variables year and month
+	label variable year "Year"
+	label variable month "Month"
+	label define month_names 1 "Jan" 2 "Feb" 3 "Mar" 4 "Apr" 5 "May" 6 "Jun" ///
+							 7 "Jul" 8 "Aug" 9 "Sep" 10 "Oct" 11 "Nov" 12 "Dec"
+	label values month month_names
+	
+	* Check the distribution and availability of data
+	ta month year
+	* No observations for July-December 2018
+
+	* Check distribution of outliers over month-year
+	bysort year: tab outliers month
+	bysort year: tab outliers_3sd month
+	
+	* Create graph of # of outliers per HS code using 95% CI, by month & year
+	graph hbar (count) outliers if outliers==1, over(month) ///
+				ytitle("") ///
+				yscale(range(6400)) ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+	
+	* Create graph of # of outliers per HS code using 3SD, by month & year
+	graph hbar (count) outliers_3sd if outliers_3sd==1, over(month) ///
+				ytitle("") ///
+				yscale(range(6400)) ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 3SD, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+	* Create monthly means 
+	bys year month: egen av_unitprice_monthyr=mean(unit_price_USD)
+
+	* Create deviation from the mean by month
+	bys year month: gen dev_mean_monthyr=unit_price_USD - av_unitprice_monthyr
+
+	* Create percentage of deviation from the monthly means
+	bys year month: gen per_dev_monthyr= dev_mean_month/av_unitprice_monthyr
+	
+	* Create sum of absolute values of percentage of deviation from the monthly mean
+	bys year month: egen sum_dev_monthyr = sum(abs(per_dev_monthyr))
+	
+	* Create bar plot of sum of absolute value of % deviations from the mean per month
+	graph hbar sum_dev_monthyr, over(month) ///
+				ytitle("") ///
+				ylabel(#3, format(%9.00fc)) ///
+				by(year, title("Sum of absolute value of % deviations from the mean per month") ///
+				subtitle("by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.00fc) color(black))
+
+	* Create index for shed names & then a facet variable for the following graph
+	egen shed_index = group(shed_name)
+	gen shed_facet = 1 if shed_index<14 & shed_index !=.
+	replace shed_facet = 2 if shed_index>13 & shed_index<27 & shed_index !=.
+	replace shed_facet = 3 if shed_index>26 & shed_index<40 & shed_index !=.
+	replace shed_facet = 4 if shed_index>39 & shed_index !=.
+
+	* Create graph of # of outliers per shed using 95% CI
+	graph hbar (count) outliers if outliers==1, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(shed_facet, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by Shed") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				ysize(20)
+				
+	* Create graph of # of outliers per shed using 3SD
+	graph hbar (count) outliers_3sd if outliers_3sd==1, over(shed_name) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(shed_facet, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by Shed") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+				
+	* Create graph of # of outliers per country using 95% CI
+	graph hbar (count) outliers if outliers==1, over(co) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by Country") ///
+				note("Note: There are no observations for July-December 2018.") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+				
+	* Create graph of # of outliers per HS2 code using 95% CI				
+	graph hbar (count) outliers if outliers==1, over(hs2) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by HS2 codes") ///
+				note("Note: There are no observations for July-December 2018.") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
 
 
 * ---------------------------------------------------------------------------- *
