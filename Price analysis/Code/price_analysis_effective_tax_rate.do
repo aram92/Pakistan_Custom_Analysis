@@ -204,6 +204,67 @@
 	
 	save "$intermediate_data/Price_data_2907_outliers.dta", replace 
 
+* ---------------------------------------------------------------------------- *
+	* Data visualization
+* ---------------------------------------------------------------------------- *
+	
+	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
+	
+	* Bar plots by month
+	preserve 
+	
+	keep if outliers_3sd==1
+	*graph hbar outliers_3sd if outliers_3sd==1, by(month)
+	
+	graph 	hbar (sum) outliers_3sd, over(month) by(year)				///
+            ytitle("Total number of outliers by month")
+
+	* May is the most with most outliers across the 12 months of observation.
+	* Generate absolute value for deviation from the mean
+	
+	gen abs_per_dev=abs(per_dev)
+	
+	* Graph this absolute value
+	
+	graph 	hbar (sum) abs_per_dev, over(month) by(year)	
+			ytitle	("Percentage deviation from the mean of outliers by month")
+
+	* ? Not sure if it makes sense and how one can interpret this. Without sum 
+	* for some reasons we also have months going from january to may 2017 but
+	* with sum most of the values are above 100%. @ALice what do you mean?
+	* without the absolute values it makes more sense but starngely again we 
+	* values again between january and mai.
+	
+	* Bar plot by shed
+	graph 	hbar (sum) outliers_3sd, by(shed)							///
+            ytitle("Total number of outliers by Shed")
+
+	* The place of inspection with most outliers is : Qasim international
+	* container termina (by far), followed by KPT East Warf, KPT West Wharf, 
+	* South ASia PAkistan Terminal, MTO, KPT East Wharf Bulk 
+	
+	* Bar plot by country
+	graph 	hbar (sum) outliers_3sd, by(co)								///	
+            ytitle("Total number of outliers by country")
+	
+	* This comment shall be adjusted with the cleaning performed by @Kaustubh
+	* The countries with most outliers are (in order): USA, EU, UAE, China, 
+	* South Africa, Kuwait, Oman, Australia, Canada, Indonesia
+	
+	* Bar plot by HS2
+	graph 	hbar (sum) outliers_3sd, by(hs2)							///
+			ytitle("Total number of outliers by HS2")								
+
+	
+	* we notice that HS72 has a large number of outliers
+       
+
+	* Those graphs are not beautiful but can tell clearly which country and shed 
+	* and goods type are outliers.
+	
+	
+	restore
+	save "$intermediate_data/Price_data_2907_graphs_pa.dta", replace
 
 * ---------------------------------------------------------------------------- *
 * Simulation on taxes to determine currency and discrepancies.
