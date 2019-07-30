@@ -218,6 +218,7 @@
 	
 	graph 	hbar (sum) outliers_3sd, over(month) by(year)				///
             ytitle("Total number of outliers by month")
+	graph 	export "$intermediate_results/Graphs/outliers_month.png", replace
 
 	* May is the most with most outliers across the 12 months of observation.
 	* Generate absolute value for deviation from the mean
@@ -238,6 +239,7 @@
 	* Bar plot by shed
 	graph 	hbar (sum) outliers_3sd, by(shed)							///
             ytitle("Total number of outliers by Shed")
+	graph 	export "$intermediate_results/Graphs/outliers_shed.png", replace
 
 	* The place of inspection with most outliers is : Qasim international
 	* container termina (by far), followed by KPT East Warf, KPT West Wharf, 
@@ -246,6 +248,7 @@
 	* Bar plot by country
 	graph 	hbar (sum) outliers_3sd, by(co)								///	
             ytitle("Total number of outliers by country")
+	graph 	export "$intermediate_results/Graphs/outliers_country.png", replace
 	
 	* This comment shall be adjusted with the cleaning performed by @Kaustubh
 	* The countries with most outliers are (in order): USA, EU, UAE, China, 
@@ -254,6 +257,7 @@
 	* Bar plot by HS2
 	graph 	hbar (sum) outliers_3sd, by(hs2)							///
 			ytitle("Total number of outliers by HS2")								
+	graph 	export "$intermediate_results/Graphs/outliers_hs2.png", replace
 
 	
 	* we notice that HS72 has a large number of outliers
