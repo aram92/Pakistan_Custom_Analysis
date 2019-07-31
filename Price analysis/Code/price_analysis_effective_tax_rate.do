@@ -203,7 +203,13 @@
 	* In this case we have 1.07% outliers
 	
 	save "$intermediate_data/Price_data_2907_outliers.dta", replace 
+
+**************************************************************************
+* Data visualization
+**************************************************************************
 	
+	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
+
 	* Determine the % of outliers
 	ta outliers_3sd
 	
@@ -222,6 +228,10 @@
 	bysort year: tab outliers month
 	bysort year: tab outliers_3sd month
 	
+	******	 We first use 95% CI	 ******
+	
+	preserve
+	keep if outliers==1
 	* Create graph of # of outliers per HS code using 95% CI, by month & year
 	graph hbar (count) outliers if outliers==1, over(month) ///
 				ytitle("") ///
@@ -232,16 +242,11 @@
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	* Create graph of # of outliers per HS code using 3SD, by month & year
-	graph hbar (count) outliers_3sd if outliers_3sd==1, over(month) ///
-				ytitle("") ///
-				yscale(range(6400)) ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 3SD, by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
-
+	graph 	export "$intermediate_results/Graphs/outliers_month.png", replace
+	
+	restore
+	
+	
 	* Create monthly means 
 	bys year month: egen av_unitprice_monthyr=mean(unit_price_USD)
 
@@ -263,6 +268,8 @@
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.00fc) color(black))
 
+	graph 	export "$intermediate_results/Graphs/outliers_dev_month_year.png", replace
+			
 	* Create index for shed names & then a facet variable for the following graph
 	egen shed_index = group(shed_name)
 	gen shed_facet = 1 if shed_index<14 & shed_index !=.
@@ -271,7 +278,10 @@
 	replace shed_facet = 4 if shed_index>39 & shed_index !=.
 
 	* Create graph of # of outliers per shed using 95% CI
-	graph hbar (count) outliers if outliers==1, ///
+	preserve
+	keep if outliers==1
+	
+/*	graph hbar (count) outliers if outliers==1, ///
 				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
 				ylabel(, format(%9.0fc)) ///
@@ -280,24 +290,19 @@
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ysize(20)
-				
-	* Create graph of # of outliers per shed using 3SD
-	graph hbar (count) outliers_3sd if outliers_3sd==1, over(shed_name) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				by(shed_facet, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by Shed") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+	graph 	export "$intermediate_results/Graphs/outliers_shed.png", replace
 				
 	* Create graph of # of outliers per country using 95% CI
 	graph hbar (count) outliers if outliers==1, over(co) ///
 				ytitle("") ///
 				ylabel(, format(%9.0fc)) ///
-				title("Number of outliers per HS code") ///
+				title("Number of outliers per COuntry of origin") ///
 				subtitle("using 95% confidence intervals, by Country") ///
 				note("Note: There are no observations for July-December 2018.") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
+	
+	graph 	export "$intermediate_results/Graphs/outliers_co.png", replace
 				
 	* Create graph of # of outliers per HS2 code using 95% CI				
 	graph hbar (count) outliers if outliers==1, over(hs2) ///
@@ -308,6 +313,110 @@
 				note("Note: There are no observations for July-December 2018.") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 
+	graph 	export "$intermediate_results/Graphs/outliers_hs2.png", replace
+	*/
+	
+	* Aram: I suggest to use by instead of over for the moment to have more 
+	* lisibility in country, shed and hs2
+	
+	graph hbar (sum) outliers, ///
+				by(shed_name) ///
+				ytitle("Number of outliers per HS code")		///
+				ylabel(, format(%9.0fc)) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) 
+
+	graph 	export "$intermediate_results/Graphs/outliers_shed.png", replace
+				
+	* Create graph of # of outliers per country using 95% CI
+	graph hbar (sum) outliers, by(co) ///
+				ytitle("Number of outliers per Country of origin") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+	
+	graph 	export "$intermediate_results/Graphs/outliers_co.png", replace
+				
+	* Create graph of # of outliers per HS2 code using 95% CI				
+	graph hbar (sum) outliers, by(hs2) ///
+				ytitle("Number of outliers per HS code") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+	graph 	export "$intermediate_results/Graphs/outliers_hs2.png", replace
+	
+	
+
+	restore
+	
+	******		We then use 3SD		******		
+	
+	* Create graph of # of outliers per HS code using 3SD, by month & year
+	
+	preserve
+
+	keep if outliers_3sd==1
+	
+	graph hbar (sum) outliers_3sd, over(month) by(year) ///
+				yscale(range(6400)) ///
+				ylabel(, format(%9.0fc)) ///
+				ytitle("Number of outliers per HS code") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month.png", replace
+
+	* Create graph of # of outliers per shed using 3SD
+	
+	graph hbar (sum) outliers_3sd, by(shed_name) ///
+				ylabel(, format(%9.0fc)) ///
+				ytitle("Number of outliers per HS code") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+	
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed.png", replace
+	
+	
+	* Create graph of # of outliers per country using 3SD
+	
+	graph hbar (count) outliers_3sd if outliers_3sd==1, by(co) ///
+				ylabel(, format(%9.0fc)) ///
+				ytitle("Number of outliers per Country of origin") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+	
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_co.png", replace
+				
+	* Create graph of # of outliers per HS2 code using 95% CI				
+	
+	graph hbar (count) outliers_3sd if outliers_3sd==1, by(hs2) ///
+				ylabel(, format(%9.0fc)) ///
+				ytitle("Number of outliers per HS code") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2.png", replace
+	
+	restore
+ 
+ 	save "$intermediate_data/Price_data_2907_graphs.dta", replace 
+
+	*************************************************************************
+	* Regression
+	**************************************************************************
+	
+	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
+
+	* We create the log variables for the regression
+	gen logimpUSD=log(imports_USD)
+	
+	gen logqua=log(quantity)
+
+	* We make sure that string variables that need to be considered as dummies
+	* are correctly encoded
+	encode(shed_name),gen (shed_code)
+	encode(co), gen(co_code)
+	eststo clear	
+
+	regress unit_price_USD i.shed_code i.co_code logimpUSD logqua i.year i.month
+	 
+	 * If we put i.hs_code in the regression we have some errors, try to understand why
+	 
+	esttab 	using "$intermediate_results/Tables/reg1.tex", label r2 ar2 ///
+			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)	
+	
+	save "$intermediate_data/Price_data_2907_outliers.dta", replace
 
 * ---------------------------------------------------------------------------- *
 * Simulation on taxes to determine currency and discrepancies.
