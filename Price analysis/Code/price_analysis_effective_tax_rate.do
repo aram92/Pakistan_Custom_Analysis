@@ -666,8 +666,7 @@
 				over(shed_name, sort(1) descending) ///
 				yscale(range(1150)) ///
 				ytitle("") ///
-				title("Total number of outliers in customs & levies") ///
-				subtitle("by shed") ///
+				title("Top 10 sheds with most outliers in customs & levies") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				nofill
 	
@@ -685,8 +684,7 @@
 	graph hbar outliers_taxes_shed if outliers_taxes_shed > 11, ///
 				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
-				title("Total number of outliers in taxes") ///
-				subtitle("by shed") ///
+				title("Top 10 sheds with most outliers in taxes") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				nofill
 //----
@@ -704,8 +702,7 @@
 				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
 				yscale(range(900)) ///
-				title("Total number of outliers in extra taxes & duties") ///
-				subtitle("by shed") ///
+				title("Top 10 sheds with most outliers in extra taxes & duties") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(6.5) ///
 				nofill
@@ -724,8 +721,7 @@
 	graph hbar outliers_total_shed if outliers_total_shed > 8, ///
 				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
-				title("Total number of outliers in total for first 3 categories") ///
-				subtitle("by shed") ///
+				title("Top 10 sheds with most outliers in total for first 3 categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(7) ///
 				nofill	
@@ -744,8 +740,7 @@
 				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
 				yscale(range(1100)) ///
-				title("Total number of outliers in total for declared custom duties & levies") ///
-				subtitle("by shed") ///
+				title("TTop 10 sheds with most outliers in declared custom duties & levies") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(8.5) ///
 				nofill	
@@ -764,8 +759,7 @@
 	graph hbar outliers_dtaxes_shed if outliers_dtaxes_shed > 11, ///
 				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
-				title("Total number of outliers in total for declared taxes") ///
-				subtitle("by shed") ///
+				title("Top 10 sheds with most outliers in total for declared taxes") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(7) ///
 				nofill		
@@ -784,8 +778,7 @@
 	graph hbar outliers_dextra_shed if outliers_dextra_shed > 37, ///
 				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
-				title("Total number of outliers in declared extra taxes & duties") ///
-				subtitle("by shed") ///
+				title("Top 10 sheds with most outliers in declared extra taxes & duties") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(7.5) ///
 				nofill
@@ -804,9 +797,159 @@
 	graph hbar outliers_dtotal_shed if outliers_dtotal_shed > 9, ///
 				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
-				title("Total number of outliers in total for first 3 categories") ///
-				subtitle("by shed") ///
+				title("Top 10 sheds with most outliers in total for first 3 categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
  				xsize(7) ///				
 				nofill		
 	
+	
+			*------------- Bar plot by HS2 -------------*							
+
+//----
+	* CUSTOMS DUTIES & LEVIES
+	
+	* Determine the top 10 HS2 Codes with the highest number of outliers
+	ta hs2 outliers_sd3_cust if outliers_sd3_cust==1
+	*It's 67
+	
+	* Create a variable that sums number of outliers by HS2 Codes
+	bys hs2: egen outliers_cust_hs2 = sum(outliers_sd3_cust)
+	
+	* Graph top 10 countries by number of outliers
+	graph hbar outliers_cust_hs2 if outliers_cust_hs2 > 66, ///
+				over(hs2, sort(1) descending) ///
+				ytitle("") ///
+				title("Top 10 HS2 codes with most outliers in customs & levies") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill
+	
+//----
+	* TAXES
+	
+	* Determine lowest number of outliers for top 10 HS2 Codes
+	ta hs2 outliers_sd3_taxes if outliers_sd3_taxes==1
+	*It's 18
+	
+	* Create a variable that sums number of outliers by HS2 Codes
+	bys hs2: egen outliers_taxes_hs2 = sum(outliers_sd3_taxes)
+	
+	* Graph top 10 HS2 Codes by number of outliers
+	graph hbar outliers_taxes_hs2 if outliers_taxes_hs2 > 17, ///
+				over(hs2, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(210)) ///
+				title("Top 10 HS2 codes with most outliers in taxes") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill
+				
+//----
+	* EXTRA TAXES & DUTIES
+	
+	* Determine lowest number of outliers for top 10 HS2 Codes
+	ta hs2 outliers_sd3_extra if outliers_sd3_extra==1
+	*It's 63
+	
+	* Create a variable that sums number of outliers by HS2 Codes
+	bys hs2: egen outliers_extra_hs2 = sum(outliers_sd3_extra)
+	
+	* Graph top 10 HS2 Codes by number of outliers
+	graph hbar outliers_extra_hs2 if outliers_extra_hs2 > 62, ///
+				over(hs2, sort(1) descending) ///
+				ytitle("") ///
+				title("Top 10 HS2 codes with most outliers in extra taxes & duties") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill
+				
+//----
+	* TOTAL FOR FIRST THREE CATEGORIES
+	
+	* Determine lowest number of outliers for top 10 HS2 Codes
+	ta hs2 outliers_sd3_total if outliers_sd3_total==1
+	*It's 9
+	
+	* Create a variable that sums number of outliers by HS2 Codes
+	bys hs2: egen outliers_total_hs2 = sum(outliers_sd3_total)
+	
+	* Graph top 10 HS2 Codes by number of outliers
+	graph hbar outliers_total_hs2 if outliers_total_hs2 > 8, ///
+				over(hs2, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(210)) ///
+				title("Top 10 HS2 codes with most outliers in total for first 3 categories") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill	
+//----				
+	* DECLARED CUSTOMS DUTIES & LEVIES
+	
+	* Determine lowest number of outliers for top 10 HS2 Codes
+	ta hs2 outliers_sd3_dcust if outliers_sd3_dcust==1
+	*It's 67
+	
+	* Create a variable that sums number of outliers by HS2 Codes
+	bys hs2: egen outliers_dcust_hs2 = sum(outliers_sd3_dcust)
+	
+	* Graph top 10 HS2 Codes by number of outliers
+	graph hbar outliers_dcust_hs2 if outliers_dcust_hs2 > 66, ///
+				over(hs2, sort(1) descending) ///
+				ytitle("") ///
+				title("Top 10 HS2 codes with most outliers in total for declared custom duties & levies") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.5) ///
+				nofill	
+
+//----				
+	* DECLARED TAXES
+	
+	* Determine lowest number of outliers for top 10 HS2 Codes
+	ta hs2 outliers_sd3_dtaxes if outliers_sd3_dtaxes==1
+	*It's 18
+	
+	* Create a variable that sums number of outliers by HS2 Codes
+	bys hs2: egen outliers_dtaxes_hs2 = sum(outliers_sd3_dtaxes)
+	
+	* Graph top 10 HS2 Codes by number of outliers
+	graph hbar outliers_dtaxes_hs2 if outliers_dtaxes_hs2 > 17, ///
+				over(hs2, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("Top 10 HS2 codes with most outliers in total for declared taxes") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(7) ///
+				nofill		
+
+//----
+	* DECLARED EXTRA TAXES & DUTIES
+	
+	* Determine lowest number of outliers for top 10 HS2 Codes
+	ta hs2 outliers_sd3_dextra if outliers_sd3_dextra==1
+	*It's 67
+	
+	* Create a variable that sums number of outliers by HS2 Codes
+	bys hs2: egen outliers_dextra_hs2 = sum(outliers_sd3_dextra)
+	
+	* Graph top 10 HS2 Codes by number of outliers
+	graph hbar outliers_dextra_hs2 if outliers_dextra_hs2 > 66, ///
+				over(hs2, sort(1) descending) ///
+				ytitle("") ///
+				title("Top 10 HS2 codes with most outliers in declared extra taxes & duties") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill
+
+//----
+	* TOTAL FOR DECLARED CATEGORIES
+	
+	* Determine lowest number of outliers for top 10 HS2 Codes
+	ta hs2 outliers_sd3_dtotal if outliers_sd3_dtotal==1
+	*It's 9
+	
+	* Create a variable that sums number of outliers by HS2 Codes
+	bys hs2: egen outliers_dtotal_hs2 = sum(outliers_sd3_dtotal)
+	
+	* Graph top 10 HS2 Codes by number of outliers
+	graph hbar outliers_dtotal_hs2 if outliers_dtotal_hs2 > 8, ///
+				over(hs2, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("Top 10 HS2 codes with most outliers in total for declared categories") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill	
