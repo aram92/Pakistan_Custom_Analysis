@@ -953,3 +953,147 @@
 				title("Top 10 HS2 codes with most outliers in total for declared categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				nofill	
+
+				
+  *------------- Bar plots by HS2 codes with biggest trade gaps -------------*							
+
+  * Generate a new variable with only the 11 HS2_Gap codes with biggest trade gaps
+  gen hs2_gap = .
+  replace hs2_gap = hs2 if hs2 == 84 | ///
+							hs2 == 85 | ///
+							hs2 == 72 | ///
+							hs2 == 87 | ///
+							hs2 == 52 | ///
+							hs2 == 12 | ///
+							hs2 == 29 | ///
+							hs2 == 15 | ///
+							hs2 == 88 | ///
+							hs2 == 90 | ///
+							hs2 == 30
+  
+//----
+	* CUSTOMS DUTIES & LEVIES
+	
+	* Create a variable that sums number of outliers by HS2_Gap Codes
+	bys hs2_gap: egen outliers_cust_hs2_gap = sum(outliers_sd3_cust)
+		
+	* Graph countries by number of outliers
+	graph hbar outliers_cust_hs2_gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("Number of outliers among HS2 gap codes in customs & levies") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6) ///
+				nofill
+				
+//----
+	* TAXES
+	
+	* Create a variable that sums number of outliers by HS2_Gap Codes
+	bys hs2_gap: egen outliers_taxes_hs2_gap = sum(outliers_sd3_taxes)
+		
+	* Graph countries by number of outliers
+	graph hbar outliers_taxes_hs2_gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("Number of outliers among HS2 gap codes in taxes") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6) ///
+				nofill
+				
+//----
+	* EXTRA TAXES & DUTIES
+	
+	* Create a variable that sums number of outliers by HS2_Gap Codes
+	bys hs2_gap: egen outliers_extra_hs2_gap = sum(outliers_sd3_extra)
+		
+	* Graph countries by number of outliers
+	graph hbar outliers_extra_hs2_gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("Number of outliers among HS2 gap codes in extra taxes & duties") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6) ///
+				nofill
+				
+//----
+	* TOTAL FOR FIRST THREE CATEGORIES
+	
+	* Create a variable that sums number of outliers by HS2_Gap Codes
+	bys hs2_gap: egen outliers_total_hs2_gap = sum(outliers_sd3_total)
+		
+	* Graph countries by number of outliers
+	graph hbar outliers_total_hs2_gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("# of outliers among HS2 gap codes in total for first three categories") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.5) ///
+				nofill
+				
+//----				
+	* DECLARED CUSTOMS DUTIES & LEVIES
+	
+	* Create a variable that sums number of outliers by HS2_Gap Codes
+	bys hs2_gap: egen outliers_dcust_hs2_gap = sum(outliers_sd3_dcust)
+		
+	* Graph countries by number of outliers
+	graph hbar outliers_dcust_hs2_gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("Number of outliers among HS2 gap codes in declared custom duties & levies") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(7) ///
+				nofill
+				
+//----				
+	* DECLARED TAXES
+	
+	* Create a variable that sums number of outliers by HS2_Gap Codes
+	bys hs2_gap: egen outliers_dtaxes_hs2_gap = sum(outliers_sd3_dtaxes)
+		
+	* Graph countries by number of outliers
+	graph hbar outliers_dtaxes_hs2_gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("Number of outliers among HS2 gap codes in declared taxes") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6) ///
+				nofill
+//----
+	* DECLARED EXTRA TAXES & DUTIES
+	
+	* Create a variable that sums number of outliers by HS2_Gap Codes
+	bys hs2_gap: egen outliers_dextra_hs2_gap = sum(outliers_sd3_dextra)
+		
+	* Graph countries by number of outliers
+	graph hbar outliers_dextra_hs2_gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("Number of outliers among HS2 gap codes in declared extra taxes & duties") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.7) ///
+				nofill
+
+//----
+	* TOTAL FOR DECLARED CATEGORIES
+	
+	* Create a variable that sums number of outliers by HS2_Gap Codes
+	bys hs2_gap: egen outliers_dtotal_hs2_gap = sum(outliers_sd3_dtotal)
+		
+	* Graph countries by number of outliers
+	graph hbar outliers_dtotal_hs2_gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(205)) ///
+				title("# of outliers among HS2 gap codes in total for declared categories") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.5) ///
+				nofill
