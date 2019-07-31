@@ -408,74 +408,6 @@
 	bys hs_code: egen sd_decl_extra_taxes = sd(decl_extra_taxes)
 	bys hs_code: egen sd_decl_total = sd(decl_total)
 
-	* Create SE by HS code
-	by hs_code: gen se_cust_duty_levies=sd_cust_duty_levies/sqrt(_N)
-	by hs_code: gen se_taxes=sd_taxes/sqrt(_N)
-	by hs_code: gen se_extra_taxes=sd_extra_taxes/sqrt(_N)
-	by hs_code: gen se_total_taxes=sd_total_taxes/sqrt(_N)
-	by hs_code: gen se_decl_cust=sd_decl_cust/sqrt(_N)
-	by hs_code: gen se_decl_taxes=sd_decl_taxes/sqrt(_N)
-	by hs_code: gen se_decl_extra_taxes=decl_extra_taxes/sqrt(_N)
-	by hs_code: gen se_decl_total=sd_decl_total/sqrt(_N)
-
-	* Create Lower bound for CI by HS code using 95% CI
-	bys hs_code: gen ci95_lower_cust= av_cust_duty_levies - (1.96 * se_cust_duty_levies)
-	bys hs_code: gen ci95_lower_taxes= av_taxes - (1.96 * se_taxes)
-	bys hs_code: gen ci95_lower_extra= av_extra_taxes - (1.96 * se_extra_taxes)
-	bys hs_code: gen ci95_lower_total= av_total_taxes - (1.96 * se_total_taxes)
-	bys hs_code: gen ci95_lower_dcust= av_decl_cust - (1.96 * se_decl_cust)
-	bys hs_code: gen ci95_lower_dtaxes= av_decl_taxes - (1.96 * se_decl_taxes)
-	bys hs_code: gen ci95_lower_dextra= av_decl_extra_taxes - (1.96 * se_decl_extra_taxes)
-	bys hs_code: gen ci95_lower_dtotal= av_decl_total - (1.96 * se_decl_total)
-
-	* Create Upper bound for CI by HS code using 95% CI
-	bys hs_code: gen ci95_upper_cust= av_cust_duty_levies + (1.96 * se_cust_duty_levies)
-	bys hs_code: gen ci95_upper_taxes= av_taxes + (1.96 * se_taxes)
-	bys hs_code: gen ci95_upper_extra= av_extra_taxes + (1.96 * se_extra_taxes)
-	bys hs_code: gen ci95_upper_total= av_total_taxes + (1.96 * se_total_taxes)
-	bys hs_code: gen ci95_upper_dcust= av_decl_cust + (1.96 * se_decl_cust)
-	bys hs_code: gen ci95_upper_dtaxes= av_decl_taxes + (1.96 * se_decl_taxes)
-	bys hs_code: gen ci95_upper_dextra= av_decl_extra_taxes + (1.96 * se_decl_extra_taxes)
-	bys hs_code: gen ci95_upper_dtotal= av_decl_total + (1.96 * se_decl_total)
-	
-	* Create variable for ouliers using 95% CI
-	gen outliers95_cust=1
-	gen outliers95_taxest=1
-	gen outliers95_extra=1
-	gen outliers95_total=1
-	gen outliers95_dcust=1
-	gen outliers95_dtaxes=1
-	gen outliers95_dextra=1
-	gen outliers95_dtotal=1
-
-	* Remove from outliers the values within the 95% CI
-	replace outliers95_cust=0 if ci95_lower_cust<cust_duty_levies<ci95_upper_cust
-	replace outliers95_taxest=0 if ci95_lower_taxes<taxes<ci95_upper_taxes
-	replace outliers95_extra=0 if ci95_lower_extra<extra_taxes<ci95_upper_extra
-	replace outliers95_total=0 if ci95_lower_total<total_taxes<ci95_upper_total
-	replace outliers95_dcust=0 if ci95_lower_dcust<decl_cust<ci95_upper_dcust
-	replace outliers95_dtaxes=0 if ci95_lower_dtaxes<decl_taxes<ci95_upper_dtaxes
-	replace outliers95_dextra=0 if ci95_lower_dextra<decl_extra_taxes<ci95_upper_dextra
-	replace outliers95_dtotal=0 if ci95_lower_dtotal<decl_total<ci95_upper_dtotal
-	
-	* Determine the % of outliers (95% CI)
-	ta outliers95_cust
-//	0.09% outliers (above)
-	ta outliers95_taxes
-//	0.03% outliers (above)
-	ta outliers95_extra
-//	0.11% outliers (above)
-	ta outliers95_total
-//	0.03% outliers (above)
-	ta outliers95_dcust
-//	0.11% outliers (above)
-	ta outliers95_dtaxes
-//	0.03% outliers (above)
-	ta outliers95_dextra
-//	0.09% outliers (above)
-	ta outliers95_dtotal
-//	0.03% outliers (above)
-
 	* Create Lower bound for CI by HS code using 3SD
 	bys hs_code: gen sd3_lower_cust= av_cust_duty_levies - (3 * sd_cust_duty_levies)
 	bys hs_code: gen sd3_lower_taxes= av_taxes - (3 * sd_taxes)
@@ -498,7 +430,7 @@
 	
 	* Create variable for outliers using 3SD
 	gen outliers_sd3_cust=1
-	gen outliers_sd3_taxest=1
+	gen outliers_sd3_taxes=1
 	gen outliers_sd3_extra=1
 	gen outliers_sd3_total=1
 	gen outliers_sd3_dcust=1
@@ -508,7 +440,7 @@
 
 	* Remove from outliers the values within 3SD
 	replace outliers_sd3_cust=0 if sd3_lower_cust<cust_duty_levies<sd3_upper_cust
-	replace outliers_sd3_taxest=0 if sd3_lower_taxes<taxes<sd3_upper_taxes
+	replace outliers_sd3_taxes=0 if sd3_lower_taxes<taxes<sd3_upper_taxes
 	replace outliers_sd3_extra=0 if sd3_lower_extra<extra_taxes<sd3_upper_extra
 	replace outliers_sd3_total=0 if sd3_lower_total<total_taxes<sd3_upper_total
 	replace outliers_sd3_dcust=0 if sd3_lower_dcust<decl_cust<sd3_upper_dcust
@@ -533,3 +465,239 @@
 //
 	ta outliers_sd3_dtotal
 //
+
+**** Custom duties & levies				
+	* Create graph of # of outliers per HS code using 3SD, by MONTH & YEAR
+	graph hbar (count) outliers_sd3_cust if outliers_sd3_cust==1, over(month) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+**** Taxes
+	graph hbar (count) outliers_sd3_taxes if outliers_sd3_taxes==1, over(month) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+*** Extra taxes and duties
+	graph hbar (count) outliers_sd3_extra if outliers_sd3_extra==1, over(month) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+				
+*** Total of first three categories
+	graph hbar (count) outliers_sd3_total if outliers_sd3_total==1, over(month) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))				
+				
+**** Declared custom duties & levies
+	graph hbar (count) outliers_sd3_dcust if outliers_sd3_dcust==1, over(month) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+*** Declared taxes
+	graph hbar (count) outliers_sd3_dtaxes if outliers_sd3_dtaxes==1, over(month) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+***	Declared extra taxes and duties		
+	graph hbar (count) outliers_sd3_dextra if outliers_sd3_dextra==1, over(month) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+				
+***	Total of the three declared categories		
+	graph hbar (count) outliers_sd3_dtotal if outliers_sd3_dtotal==1, over(month) ///
+				ytitle("") ///
+				ylabel(, format(%9.0fc)) ///
+				by(year, title("Number of outliers per HS code") ///
+				subtitle("using 95% confidence intervals, by month and year") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+
+				
+
+	*------------- Bar plot by shed -------------*
+	
+	* CUSTOMS DUTIES & LEVIES
+	
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_sd3_cust if outliers_sd3_cust==1
+	*It's 26
+	
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_cust_shed = sum(outliers_sd3_cust)
+	
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_cust_shed if outliers_cust_shed > 25, ///
+				over(shed_name, sort(1) descending) ///
+				yscale(range(1150)) ///
+				ytitle("") ///
+				title("Total number of outliers in customs & levies") ///
+				subtitle("by shed") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill
+	
+//----
+	* TAXES
+	
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_sd3_taxes if outliers_sd3_taxes==1
+	*It's 12
+	
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_taxes_shed = sum(outliers_sd3_taxes)
+	
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_taxes_shed if outliers_taxes_shed > 11, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				title("Total number of outliers in taxes") ///
+				subtitle("by shed") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill
+//----
+	* EXTRA TAXES & DUTIES
+	
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_sd3_extra if outliers_sd3_extra==1
+	*It's 36
+	
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_extra_shed = sum(outliers_sd3_extra)
+	
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_extra_shed if outliers_extra_shed > 35, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(900)) ///
+				title("Total number of outliers in extra taxes & duties") ///
+				subtitle("by shed") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.5) ///
+				nofill
+				
+//----
+	* TOTAL FOR FIRST THREE CATEGORIES
+	
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_sd3_total if outliers_sd3_total==1
+	*It's 9
+	
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_total_shed = sum(outliers_sd3_total)
+	
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_total_shed if outliers_total_shed > 8, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				title("Total number of outliers in total for first 3 categories") ///
+				subtitle("by shed") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(7) ///
+				nofill	
+//----				
+	* DECLARED CUSTOMS DUTIES & LEVIES
+	
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_sd3_dcust if outliers_sd3_dcust==1
+	*It's 26
+	
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_dcust_shed = sum(outliers_sd3_dcust)
+	
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_dcust_shed if outliers_dcust_shed > 25, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(1100)) ///
+				title("Total number of outliers in total for declared custom duties & levies") ///
+				subtitle("by shed") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(8.5) ///
+				nofill	
+
+//----				
+	* DECLARED TAXES
+	
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_sd3_dtaxes if outliers_sd3_dtaxes==1
+	*It's 12
+	
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_dtaxes_shed = sum(outliers_sd3_dtaxes)
+	
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_dtaxes_shed if outliers_dtaxes_shed > 11, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				title("Total number of outliers in total for declared taxes") ///
+				subtitle("by shed") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(7) ///
+				nofill		
+
+//----
+	* DECLARED EXTRA TAXES & DUTIES
+	
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_sd3_dextra if outliers_sd3_dextra==1
+	*It's 38
+	
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_dextra_shed = sum(outliers_sd3_dextra)
+	
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_dextra_shed if outliers_dextra_shed > 37, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				title("Total number of outliers in declared extra taxes & duties") ///
+				subtitle("by shed") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(7.5) ///
+				nofill
+
+//----
+	* TOTAL FOR DECLARED CATEGORIES
+	
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_sd3_dtotal if outliers_sd3_dtotal==1
+	*It's 10
+	
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_dtotal_shed = sum(outliers_sd3_dtotal)
+	
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_dtotal_shed if outliers_dtotal_shed > 9, ///
+				over(shed_name, sort(1) descending) ///
+				ytitle("") ///
+				title("Total number of outliers in total for first 3 categories") ///
+				subtitle("by shed") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+ 				xsize(7) ///				
+				nofill		
+	
