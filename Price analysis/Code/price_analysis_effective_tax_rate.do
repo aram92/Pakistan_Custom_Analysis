@@ -74,7 +74,7 @@
 	use "$intermediate_data/Price_data_2907.dta", clear 
 
 * ---------------------------------------------------------------------------- *
-* Cleaning of country variable
+* Cleaning of country, quantity codes, and shed variables
 * ---------------------------------------------------------------------------- *
 
 	replace co="European Union" if co=="Austria" | ///
@@ -205,6 +205,10 @@
 	replace QT_code="Kg" if quantity_unit_code=="kg"
 	replace QT_code="Number of items" if quantity_unit_code=="no"
 
+	* KC's additons:
+	replace shed_name="South Asia Pakistan Terminals" ///
+				if shed_name=="SOUTH ASIA PAKISTAN TERMINALS"
+	replace shed_name="Peshawar Torkham" if shed_name=="PESHAWAR TORKHAM"
 
 * ---------------------------------------------------------------------------- *
 * Trial on CI, to be applied on correct unit_price.
@@ -757,12 +761,12 @@
 	graph hbar (count) outliers_sd3_cust, over(month) ///
 				ytitle("") ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
+				by(year, title("Number of outliers per HS code for custom duties & levies") ///
+				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_cust.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_cust.pdf", replace
 
 	restore
 	
@@ -774,13 +778,14 @@
 
 	graph hbar (count) outliers_sd3_taxes, over(month) ///
 				ytitle("") ///
+				yscale(range(158)) ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
+				by(year, title("Number of outliers per HS code for taxes") ///
+				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_taxes.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_taxes.pdf", replace
 
 	restore
 	
@@ -793,29 +798,29 @@
 	graph hbar (count) outliers_sd3_extra, over(month) ///
 				ytitle("") ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
+				by(year, title("Number of outliers per HS code for extra taxes & duties") ///
+				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_extra.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_extra.pdf", replace
 				
 	restore
 	
 *** Total of first three categories
-
 	preserve
 	keep if outliers_sd3_total==1
 
 	graph hbar (count) outliers_sd3_total, over(month) ///
 				ytitle("") ///
+				yscale(range(157)) ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
+				by(year, title("Number of outliers per HS code for total") ///
+				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))				
 
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_total.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_total.pdf", replace
 	
 	restore
 	
@@ -826,69 +831,72 @@
 	graph hbar (count) outliers_sd3_dcust, over(month) ///
 				ytitle("") ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
+				by(year, title("Number of outliers per HS code for declared custom duties & levies") ///
+				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6)
 
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dcust.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dcust.pdf", replace
 		
 	restore
 	
+	
 *** Declared taxes
-
 	preserve
 	keep if outliers_sd3_dtaxes==1
 	
 
 	graph hbar (count) outliers_sd3_dtaxes, over(month) ///
 				ytitle("") ///
+				yscale(range(157)) ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
+				by(year, title("Number of outliers per HS code for declared taxes") ///
+				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dtaxes.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dtaxes.pdf", replace
 		
 	restore
 	
 ***	Declared extra taxes and duties	
-
 	preserve
 	keep if outliers_sd3_dextra==1
-	
 	
 	graph hbar (count) outliers_sd3_dextra, over(month) ///
 				ytitle("") ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
+				by(year, title("Number of outliers per HS code for declared extra taxes & duties") ///
+				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6)
+				
 
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dextra.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dextra.pdf", replace
 
 	restore	
 	
 ***	Total of the three declared categories
-	
 	preserve
 	keep if outliers_sd3_total==1
-	
 		
 	graph hbar (count) outliers_sd3_dtotal if outliers_sd3_dtotal==1, over(month) ///
 				ytitle("") ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
+				yscale(range(157)) ///
+				by(year, title("Number of outliers per HS code for declared total") ///
+				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6)
 
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dtotal.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dtotal.pdf", replace
 				
 	restore			
 
+	
 	*------------- Bar plot by shed -------------*
 	
 	* CUSTOMS DUTIES & LEVIES
@@ -900,19 +908,20 @@
 	* Create a variable that sums number of outliers by Sheds
 	bys shed_name: egen outliers_cust_shed = sum(outliers_sd3_cust)
 		
+	* Graph top 10 Sheds by number of outliers
 	preserve
 	keep if outliers_cust_shed>25	
 
-	* Graph top 10 Sheds by number of outliers
 	graph hbar outliers_cust_shed if outliers_cust_shed > 25, ///
 				over(shed_name, sort(1) descending) ///
 				yscale(range(1150)) ///
 				ytitle("") ///
 				title("Top 10 sheds with most outliers in customs & levies") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(7) ///
 				nofill
 	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_cust.png", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_cust.pdf", replace
 	
 	restore
 	
