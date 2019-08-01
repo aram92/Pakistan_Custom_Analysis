@@ -129,12 +129,12 @@
 						co=="Johnston Island" | ///
 						co=="United States"
 	replace co="Dominican Republic" if co=="Dominica" | co=="Dominican Rep." | co =="Dominican Republic"
-	replace co="Bahrain" if co=="Bahrain/kingdom Of Bahrain"   		 // KC's ADDITION
-	replace co="Norway" if co=="Bouvet Island"						 // KC's ADDITION
-	replace co="Cambodia" if co=="Cambodia/kampuchea Democratic"	 // KC's ADDITION
-	replace co="European Union" if co=="Canary Is"					 // KC's ADDITION. Aram: This shall be Spain not an independent state
-	replace co="Kiribati" if co=="Canton-endbry Island"				 // KC's ADDITION
-	replace co="Australia" if co=="Christmas Island" | /// KC's ADDITION + EVERYTHING BELOW THIS
+	replace co="Bahrain" if co=="Bahrain/kingdom Of Bahrain"   		 // KC's ADDITION + EVERYTHING BELOW THIS
+	replace co="Norway" if co=="Bouvet Island"						 //
+	replace co="Cambodia" if co=="Cambodia/kampuchea Democratic"	 // 
+	replace co="European Union" if co=="Canary Is"					 // Aram: This shall be Spain not an independent state
+	replace co="Kiribati" if co=="Canton-endbry Island"				 // 
+	replace co="Australia" if co=="Christmas Island" | ///
 							  co=="Cocos (keeling) Island" | ///
 							  co=="Heard Island And Mcdonald Isla" | ///
 							  co=="Norfolk Island"
@@ -162,8 +162,8 @@
 	replace co="New Zealand" if co=="Tokelau"
 	replace co="European Union" if co=="Turks And  caicos Island" 
 	replace co="USA" if co=="U.S Misc Pav Islands" 
-	replace co="USA" if co="Virgin Islands U.S"
-	replace co="USA" if co="Wake Island"
+	replace co="USA" if co=="Virgin Islands U.S"
+	replace co="USA" if co=="Wake Island"
 	*replace co="European Union" if co=="Aruba" //Netherlands
 	replace co="European Union" if co=="Anguilla" //UK
 	replace co="European Union" if co=="British Indian Ocean Territori"
@@ -187,7 +187,6 @@
 	* What is Int.Brand Mfg.In Other Country? and Pacific Island Trtry ?
 
 	* for below, make sure that no conflicting replace with my previous cleanings
-	gen QT_code="Number of items"
 	replace QT_code="Thousands" if quantity_unit_code=="1000"
 	replace QT_code="Carats" if quantity_unit_code=="CARA"
 	replace QT_code="Cubic meters" if quantity_unit_code=="CUM" 
@@ -1061,7 +1060,169 @@
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_dtotal.png", replace
 
 	restore
-			*------------- Bar plot by HS2 -------------*							
+
+				*------------- Bar plot by country -------------*
+
+//----
+	* CUSTOMS DUTIES & LEVIES
+	
+	* Determine lowest number of outliers for top 10 countries
+	ta co outliers_sd3_cust if outliers_sd3_cust==1
+	*It's 60
+	
+	* Create a variable that sums number of outliers by Country
+	bys co: egen outliers_cust_co = sum(outliers_sd3_cust)
+	
+	* Graph top 10 countries by number of outliers
+	graph hbar outliers_cust_co if outliers_cust_co > 59, ///
+				over(co, sort(1) descending) ///
+				yscale(range(1200)) ///
+				ytitle("") ///
+				title("Top 10 countries with most outliers in customs & levies") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6) ///
+				nofill
+	
+//----
+	* TAXES
+	
+	* Determine lowest number of outliers for top 10 Country
+	ta co outliers_sd3_taxes if outliers_sd3_taxes==1
+	*It's 15
+	
+	* Create a variable that sums number of outliers by Country
+	bys co: egen outliers_taxes_co = sum(outliers_sd3_taxes)
+	
+	* Graph top 10 Country by number of outliers
+	graph hbar outliers_taxes_co if outliers_taxes_co > 14, ///
+				over(co, sort(1) descending) ///
+				yscale(range(260)) ///
+				ytitle("") ///
+				title("Top 10 countries with most outliers in taxes") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				nofill
+
+//----
+	* EXTRA TAXES & DUTIES
+	
+	* Determine lowest number of outliers for top 10 Country
+	ta co outliers_sd3_extra if outliers_sd3_extra==1
+	*It's 60
+	
+	* Create a variable that sums number of outliers by Country
+	bys co: egen outliers_extra_co = sum(outliers_sd3_extra)
+	
+	* Graph top 10 Country by number of outliers
+	graph hbar outliers_extra_co if outliers_extra_co > 59, ///
+				over(co, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(1200)) ///
+				title("Top 10 countries with most outliers in extra taxes & duties") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.5) ///
+				nofill
+				
+//----
+	* TOTAL FOR FIRST THREE CATEGORIES
+	
+	* Determine lowest number of outliers for top 10 Country
+	ta co outliers_sd3_total if outliers_sd3_total==1
+	*It's 15
+	
+	* Create a variable that sums number of outliers by Country
+	bys co: egen outliers_total_co = sum(outliers_sd3_total)
+	
+	* Graph top 10 Country by number of outliers
+	graph hbar outliers_total_co if outliers_total_co > 14, ///
+				over(co, sort(1) descending) ///
+				ytitle("") ///
+				title("Top 10 countries with most outliers in total for first 3 categories") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.5) ///
+				nofill	
+				
+//----				
+	* DECLARED CUSTOMS DUTIES & LEVIES
+	
+	* Determine lowest number of outliers for top 10 Country
+	ta co outliers_sd3_dcust if outliers_sd3_dcust==1
+	*It's 60
+	
+	* Create a variable that sums number of outliers by Country
+	bys co: egen outliers_dcust_co = sum(outliers_sd3_dcust)
+	
+	* Graph top 10 Country by number of outliers
+	graph hbar outliers_dcust_co if outliers_dcust_co > 59, ///
+				over(co, sort(1) descending) ///
+				ytitle("") ///
+				yscale(range(1200)) ///
+				title("Top 10 countries with most outliers in total for declared custom duties & levies") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(8) ///
+				nofill	
+
+//----				
+	* DECLARED TAXES
+	
+	* Determine lowest number of outliers for top 10 Country
+	ta co outliers_sd3_dtaxes if outliers_sd3_dtaxes==1
+	*It's 15
+	
+	* Create a variable that sums number of outliers by Country
+	bys co: egen outliers_dtaxes_co = sum(outliers_sd3_dtaxes)
+	
+	* Graph top 10 Country by number of outliers
+	graph hbar outliers_dtaxes_co if outliers_dtaxes_co > 14, ///
+				over(co, sort(1) descending) ///
+				yscale(rang(260)) ///
+				ytitle("") ///
+				title("Top 10 countries with most outliers in total for declared taxes") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.5) ///
+				nofill		
+
+//----
+	* DECLARED EXTRA TAXES & DUTIES
+	
+	* Determine lowest number of outliers for top 10 Country
+	ta co outliers_sd3_dextra if outliers_sd3_dextra==1
+	*It's 60
+	
+	* Create a variable that sums number of outliers by Country
+	bys co: egen outliers_dextra_co = sum(outliers_sd3_dextra)
+	
+	* Graph top 10 Country by number of outliers
+	graph hbar outliers_dextra_co if outliers_dextra_co > 59, ///
+				over(co, sort(1) descending) ///
+				yscale(range(1200)) ///
+				ytitle("") ///
+				title("Top 10 countries with most outliers in declared extra taxes & duties") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(7.5) ///
+				nofill
+
+//----
+	* TOTAL FOR DECLARED CATEGORIES
+	
+	* Determine lowest number of outliers for top 10 Country
+	ta co outliers_sd3_dtotal if outliers_sd3_dtotal==1
+	*It's 15
+	
+	* Create a variable that sums number of outliers by Country
+	bys co: egen outliers_dtotal_co = sum(outliers_sd3_dtotal)
+	
+	* Graph top 10 Country by number of outliers
+	graph hbar outliers_dtotal_co if outliers_dtotal_co > 14, ///
+				over(co, sort(1) descending) ///
+				ytitle("") ///
+				title("Top 10 countries with most outliers in total for declared categories") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.8) ///
+				nofill	
+	
+	
+	
+					*------------- Bar plot by HS2 -------------*							
 
 //----
 	* CUSTOMS DUTIES & LEVIES
