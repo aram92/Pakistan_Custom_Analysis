@@ -30,6 +30,8 @@
 	
 	version 12.1
 	
+	*Installation of a package to export tables as docx files
+//	ssc install asdoc
   
 	dis "`c(username)'" // The text that shows up is the username of your computer (say XXX), and insert that into the code below
 
@@ -51,10 +53,9 @@
             }
 
 	* Kaustubh
-	if c(username)=="Kaustubh" {
-           * Put general folder where data and codes are stored, @Kaustubh update here
-			global onedrive ""
-            }
+	if c(username)=="kc" {
+			global onedrive "/Users/kc/Documents/World Bank/Pakistan Price Analysis"
+			}
  
 			
 * ---------------------------------------------------------------------------- *
@@ -83,14 +84,14 @@
 			co=="Bulgaria" | ///
 			co=="Croatia" | ///
 			co=="Republic of Cyprus" | ///
-			co=="Cyprus" | ///							MY ADDITION
+			co=="Cyprus" | ///									KC's ADDITION
 			co=="Czechia" | ///
 			co=="Czechoslovakia" | ///
 			co=="Czech Republic" | ///
 			co=="Denmark" | ///
 			co=="Estonia" | ///
 			co=="Europein Union" | ///
-			co=="Europien Union" | ///					MY ADDITION
+			co=="Europien Union" | ///							KC's ADDITION
 			co=="Faeroe Islands" | ///
 			co=="Finland" | ///
 			co=="France" | ///
@@ -181,7 +182,7 @@
 	replace co="Norway" if co=="Svalbard And Jan Mayen"
 	* What to do about North/East/West Africa, Yugoslavia, Far East and all origins?? Not sure also
 	* about the territories in the netherlands, just put them in comments here in case
-	* SInce they are all antilles, Shall we reclassify them as Netherlands Antilles ?
+	* Since they are all antilles, Shall we reclassify them as Netherlands Antilles ?
 
 	* what about neutral zone?
 	* What is Int.Brand Mfg.In Other Country? and Pacific Island Trtry ?
@@ -213,26 +214,24 @@
 	* We first need to make sure that for each quantity we have the same
 	* unit of measurement by hs_code
 	
-	codebook quantity_unit_code
-	ta quantity_unit_code
+	codebook QT_code
+	ta QT_code
 		
 	gen flag=0
-	bys hs_code: replace flag=1 if quantity_unit_code!=quantity_unit_code[_N]
-	ta flag
+	bys hs_code: replace flag=1 if QT_code!=QT_code[_N]
+	ta flag 
 		
 	* There are 0.01% of cases with differences in the unit of measurement within 
 	* a same hs_code
 	
 	ta hs_code if flag==1
-	br hs_code quantity_unit_code if flag==1
+	br hs_code QT_code if flag==1
 	
-	* Most of those cases appear as a flag cause the unit is missing.
-	* However for some of them it is really different (ex hs_code 7308.3
-	* has 249 observations in KG and 4 in NO.) @ Alice what do you suggest,
-	* I saw that NO stands for number but I am not sure if it is possible to 
-	* convert it somehow.
+	* hs_code 7308.3 has 249 observations in KG and 4 in NO.)
+	* @ Alice what do you suggest, I saw that NO stands for number but I am not 
+	* sure if it is possible to convert it somehow.
 	
-	ta hs_code quantity_unit_code if hs_code>=7308&hs_code<=7309
+	ta hs_code QT_code if hs_code>=7308&hs_code<=7309
 	
 	* For the moment we don't make any change and create the unit price based on 
 	* the assumption that the unit of measurement are equivalement for each quantity
@@ -550,7 +549,7 @@
 	save "$intermediate_data/Price_data_2907_regression.dta", replace
 
 * ---------------------------------------------------------------------------- *
-* Simulation on taxes to determine currency and discrepancies.
+* 			Simulation on taxes to determine currency and discrepancies
 * ---------------------------------------------------------------------------- *
 
 	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
@@ -686,25 +685,64 @@
 	replace outliers_sd3_dtaxes=0 if sd3_lower_dtaxes<decl_taxes<sd3_upper_dtaxes
 	replace outliers_sd3_dextra=0 if sd3_lower_dextra<decl_extra_taxes<sd3_upper_dextra
 	replace outliers_sd3_dtotal=0 if sd3_lower_dtotal<decl_total<sd3_upper_dtotal
+
+	label variable outliers_sd3_cust "Outliers in custom duties & levies"
+	label variable outliers_sd3_taxes "Outliers in taxes"
+	label variable outliers_sd3_extra "Outliers in extra taxes and duties"
+	label variable outliers_sd3_total "Outliers in total of three categories"
+	label variable outliers_sd3_dcust "Outliers in declared custom duties & levies"
+	label variable outliers_sd3_dtaxes "Outliers in declared taxes"
+	label variable outliers_sd3_dextra "Outliers in declared extra taxes and duties"
+	label variable outliers_sd3_dtotal "Outliers in declared total of three categories"
+
+	label define outliers_cust 0 "Not Outlier" 1 "Outlier"
+	label define outliers_taxes 0 "Not Outlier" 1 "Outlier"
+	label define outliers_extra 0 "Not Outlier" 1 "Outlier"
+	label define outliers_total 0 "Not Outlier" 1 "Outlier"
+	label define outliers_dcust 0 "Not Outlier" 1 "Outlier"
+	label define outliers_dtaxes 0 "Not Outlier" 1 "Outlier"
+	label define outliers_dextra 0 "Not Outlier" 1 "Outlier"
+	label define outliers_dtotal 0 "Not Outlier" 1 "Outlier"
+	
+	label values outliers_sd3_cust outliers_cust
+	label values outliers_sd3_taxes outliers_taxes
+	label values outliers_sd3_extra outliers_extra
+	label values outliers_sd3_total outliers_total
+	label values outliers_sd3_dcust outliers_dcust
+	label values outliers_sd3_dtaxes outliers_dtaxes
+	label values outliers_sd3_dextra outliers_dextra
+	label values outliers_sd3_dtotal outliers_dtotal
 	
 	* Determine the % of outliers (3SD)
 	ta outliers_sd3_cust
-//
-	ta outliers_sd3_taxes
-//
-	ta outliers_sd3_extra
-//
-	ta outliers_sd3_total
-//
-	ta outliers_sd3_dcust
-//
-	ta outliers_sd3_dtaxes
-//
-	ta outliers_sd3_dextra
-//
-	ta outliers_sd3_dtotal
-//
+//	0.09% of observations are outliers
 
+	ta outliers_sd3_taxes
+//	0.03% of observations are outliers
+
+	ta outliers_sd3_extra
+//	0.09% of observations are outliers
+
+	ta outliers_sd3_total
+//	0.03% of observations are outliers
+
+	ta outliers_sd3_dcust
+//	0.09% of observations are outliers
+
+	ta outliers_sd3_dtaxes
+//	0.03% of observations are outliers
+
+	ta outliers_sd3_dextra
+//	0.09% of observations are outliers
+
+	ta outliers_sd3_dtotal
+//	0.03% of observations are outliers
+
+ 
+	asdoc tab1 outliers_sd3_cust outliers_sd3_taxes outliers_sd3_extra ///
+				outliers_sd3_total outliers_sd3_dcust outliers_sd3_dtaxes ///
+				outliers_sd3_dextra outliers_sd3_dtotal, replace label
+	
 	save "$intermediate_data/Price_data_2907_taxes.dta", replace
 
 	
@@ -902,7 +940,8 @@
 				
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_taxes.png", replace
 	
-	restore			
+	restore	
+	
 //----
 	* EXTRA TAXES & DUTIES
 	
@@ -1082,6 +1121,17 @@
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(6) ///
 				nofill
+	
+	* Create means by HS code
+	bys hs_code: egen av_cust_duty_levies = mean(cust_duty_levies)
+	bys hs_code: egen av_taxes = mean(taxes)
+	bys hs_code: egen av_extra_taxes = mean(extra_taxes)
+	bys hs_code: egen av_total_taxes = mean(total_taxes)
+	bys hs_code: egen av_decl_cust = mean(decl_cust)
+	bys hs_code: egen av_decl_taxes = mean(decl_taxes)
+	bys hs_code: egen av_decl_extra_taxes = mean(decl_extra_taxes)
+	bys hs_code: egen av_decl_total = mean(decl_total)
+
 	
 //----
 	* TAXES
