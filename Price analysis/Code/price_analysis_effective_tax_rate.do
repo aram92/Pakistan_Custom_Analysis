@@ -31,7 +31,8 @@
 	version 12.1
 	
 	*Installation of a package to export tables as docx files
-//	ssc install asdoc
+	ssc install asdoc
+	ssc install estout
   
 	dis "`c(username)'" // The text that shows up is the username of your computer (say XXX), and insert that into the code below
 
@@ -243,10 +244,9 @@
 	bys hs_code: gen unit_price_USD=imports_USD/quantity
 
 	* Create mean by HS_Code
-	
-	bys hs_code: egen av_unitprice=mean(unit_price_USD)
+	*bys hs_code: egen av_unitprice=mean(unit_price_USD)
 
-	/* Mean by 6 months interval, to be run at the last moment
+	* Mean by 6 months interval, to be run at the last moment
 	* Generate the variable that will eventually store the result of our loop
 	
 	gen 	sem_price=.
@@ -281,8 +281,7 @@
 	* Choose one hs_code to test if the code has worked
 	
 	br unit_price_USD sem_price date month year hs_code if hs_code==9206	
-
-	*/	
+	
 		
 	* Create sd by HS_code
 	bys hs_code: egen sd_unitprice= sd(unit_price_USD)
@@ -835,7 +834,7 @@
 				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6)
+				xsize(6.1)
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dcust.pdf", replace
 		
@@ -918,7 +917,7 @@
 				ytitle("") ///
 				title("Top 10 sheds with most outliers in customs & levies") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.2) ///
+				xsize(7.3) ///
 				nofill
 	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_cust.pdf", replace
@@ -971,10 +970,10 @@
 				yscale(range(900)) ///
 				title("Top 10 sheds with most outliers in extra taxes & duties") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7) ///
+				xsize(7.1) ///
 				nofill
 				
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_extra_shed.pdf", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_extra.pdf", replace
 				
 	restore
 	
@@ -997,10 +996,10 @@
 				ytitle("") ///
 				title("Top 10 sheds with most outliers in total for first 3 categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.5) ///
+				xsize(7.6) ///
 				nofill	
 				
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_total_shed.pdf", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_total.pdf", replace
 	
 	restore
 	
@@ -1024,7 +1023,7 @@
 				yscale(range(1100)) ///
 				title("Top 10 sheds with most outliers for declared custom duties & levies") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(8.5) ///
+				xsize(8.6) ///
 				nofill	
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_dcust.pdf", replace
@@ -1050,7 +1049,7 @@
 				ytitle("") ///
 				title("Top 10 sheds with most outliers for declared taxes") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7) ///
+				xsize(7.1) ///
 				nofill		
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_dtaxes.pdf", replace
@@ -1076,7 +1075,7 @@
 				ytitle("") ///
 				title("Top 10 sheds with most outliers in declared extra taxes & duties") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.7) ///
+				xsize(7.8) ///
 				nofill
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_dextra.pdf", replace
@@ -1102,7 +1101,7 @@
 				ytitle("") ///
 				title("Top 10 sheds with most outliers in total for declared categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
- 				xsize(7.7) ///				
+ 				xsize(7.8) ///				
 				nofill		
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_dtotal.pdf", replace
@@ -1209,7 +1208,7 @@
 				ytitle("") ///
 				title("Top 10 countries with most outliers in total for first 3 categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.5) ///
+				xsize(6.6) ///
 				nofill	
 	
 	graph export "$intermediate_results/Graphs/outliers_3sd_co_total.pdf", replace
@@ -1232,10 +1231,10 @@
 	graph hbar outliers_dcust_co if outliers_dcust_co > 59, ///
 				over(co, sort(1) descending) ///
 				ytitle("") ///
-				yscale(range(1100)) ///
+				yscale(range(1200)) ///
 				title("Top 10 countries with most outliers in total for declared custom duties & levies") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(8) ///
+				xsize(8.1) ///
 				nofill	
 
 	graph export "$intermediate_results/Graphs/outliers_3sd_co_dcust.pdf", replace
@@ -1253,15 +1252,22 @@
 	bys co: egen outliers_dtaxes_co = sum(outliers_sd3_dtaxes)
 	
 	* Graph top 10 Country by number of outliers
+	preserve
+	keep if outliers_dtaxes_co > 14
+	
 	graph hbar outliers_dtaxes_co if outliers_dtaxes_co > 14, ///
 				over(co, sort(1) descending) ///
 				yscale(rang(260)) ///
 				ytitle("") ///
 				title("Top 10 countries with most outliers in total for declared taxes") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.5) ///
+				xsize(6.6) ///
 				nofill		
 
+	graph export "$intermediate_results/Graphs/outliers_3sd_co_dtaxes.pdf", replace
+				
+	restore
+	
 //----
 	* DECLARED EXTRA TAXES & DUTIES
 	
@@ -1273,6 +1279,9 @@
 	bys co: egen outliers_dextra_co = sum(outliers_sd3_dextra)
 	
 	* Graph top 10 Country by number of outliers
+	preserve
+	keep if outliers_dextra_co > 59
+	
 	graph hbar outliers_dextra_co if outliers_dextra_co > 59, ///
 				over(co, sort(1) descending) ///
 				yscale(range(1200)) ///
@@ -1281,6 +1290,10 @@
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(7.5) ///
 				nofill
+	
+	graph export "$intermediate_results/Graphs/outliers_3sd_co_dextra.pdf", replace
+	
+	restore
 
 //----
 	* TOTAL FOR DECLARED CATEGORIES
@@ -1293,15 +1306,20 @@
 	bys co: egen outliers_dtotal_co = sum(outliers_sd3_dtotal)
 	
 	* Graph top 10 Country by number of outliers
+	preserve
+	keep if outliers_dtotal_co > 14
+	
 	graph hbar outliers_dtotal_co if outliers_dtotal_co > 14, ///
 				over(co, sort(1) descending) ///
 				ytitle("") ///
 				title("Top 10 countries with most outliers in total for declared categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.8) ///
+				xsize(6.9) ///
 				nofill	
 	
+	graph export "$intermediate_results/Graphs/outliers_3sd_co_dtotal.pdf", replace
 	
+	restore
 	
 					*------------- Bar plot by HS2 -------------*							
 
@@ -1315,10 +1333,10 @@
 	* Create a variable that sums number of outliers by HS2 Codes
 	bys hs2: egen outliers_cust_hs2 = sum(outliers_sd3_cust)
 
+	* Graph top 10 countries by number of outliers
 	preserve
 	keep if outliers_cust_hs2>66
 
-	* Graph top 10 countries by number of outliers
 	graph hbar outliers_cust_hs2 if outliers_cust_hs2 > 66, ///
 				over(hs2, sort(1) descending) ///
 				ytitle("") ///
@@ -1340,10 +1358,10 @@
 	* Create a variable that sums number of outliers by HS2 Codes
 	bys hs2: egen outliers_taxes_hs2 = sum(outliers_sd3_taxes)
 	
+	* Graph top 10 HS2 Codes by number of outliers
 	preserve
 	keep if outliers_taxes_hs2>17
 	
-	* Graph top 10 HS2 Codes by number of outliers
 	graph hbar outliers_taxes_hs2 if outliers_taxes_hs2 > 17, ///
 				over(hs2, sort(1) descending) ///
 				ytitle("") ///
@@ -1365,10 +1383,10 @@
 	* Create a variable that sums number of outliers by HS2 Codes
 	bys hs2: egen outliers_extra_hs2 = sum(outliers_sd3_extra)
 
+	* Graph top 10 HS2 Codes by number of outliers
 	preserve
 	keep if outliers_extra_hs2>62
 	
-	* Graph top 10 HS2 Codes by number of outliers
 	graph hbar outliers_extra_hs2 if outliers_extra_hs2 > 62, ///
 				over(hs2, sort(1) descending) ///
 				ytitle("") ///
@@ -1400,6 +1418,7 @@
 				yscale(range(210)) ///
 				title("Top 10 HS2 codes with most outliers in total for first 3 categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.3) ///
 				nofill	
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_total.pdf", replace
@@ -1416,16 +1435,16 @@
 	* Create a variable that sums number of outliers by HS2 Codes
 	bys hs2: egen outliers_dcust_hs2 = sum(outliers_sd3_dcust)
 
+	* Graph top 10 HS2 Codes by number of outliers
 	preserve
 	keep if outliers_dcust_hs2>66
 
-	* Graph top 10 HS2 Codes by number of outliers
 	graph hbar outliers_dcust_hs2 if outliers_dcust_hs2 > 66, ///
 				over(hs2, sort(1) descending) ///
 				ytitle("") ///
 				title("Top 10 HS2 codes with most outliers in total for declared custom duties & levies") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.5) ///
+				xsize(7.3) ///
 				nofill	
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_dcust.pdf", replace
@@ -1442,17 +1461,17 @@
 	* Create a variable that sums number of outliers by HS2 Codes
 	bys hs2: egen outliers_dtaxes_hs2 = sum(outliers_sd3_dtaxes)
 
+	* Graph top 10 HS2 Codes by number of outliers
 	preserve
 	keep if outliers_dtaxes_hs2>17
 	
-	* Graph top 10 HS2 Codes by number of outliers
 	graph hbar outliers_dtaxes_hs2 if outliers_dtaxes_hs2 > 17, ///
 				over(hs2, sort(1) descending) ///
 				ytitle("") ///
 				yscale(range(205)) ///
 				title("Top 10 HS2 codes with most outliers in total for declared taxes") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7) ///
+				xsize(6.5) ///
 				nofill		
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_dtaxes.pdf", replace
@@ -1478,6 +1497,7 @@
 				ytitle("") ///
 				title("Top 10 HS2 codes with most outliers in declared extra taxes & duties") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.5) ///
 				nofill
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_dextra.pdf", replace
@@ -1494,16 +1514,17 @@
 	* Create a variable that sums number of outliers by HS2 Codes
 	bys hs2: egen outliers_dtotal_hs2 = sum(outliers_sd3_dtotal)
 	
+	* Graph top 10 HS2 Codes by number of outliers
 	preserve
 	keep if outliers_dtotal_hs2>8
 	
-	* Graph top 10 HS2 Codes by number of outliers
 	graph hbar outliers_dtotal_hs2 if outliers_dtotal_hs2 > 8, ///
 				over(hs2, sort(1) descending) ///
 				ytitle("") ///
 				yscale(range(205)) ///
 				title("Top 10 HS2 codes with most outliers in total for declared categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				xsize(6.3) ///
 				nofill	
 
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_dtotal.pdf", replace
@@ -1557,8 +1578,8 @@
 				yscale(range(205)) ///
 				title("Number of outliers among HS2 gap codes in taxes") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6) ///
 				nofill
+	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_taxes.pdf", replace
 				
 //----
@@ -1574,8 +1595,9 @@
 				yscale(range(205)) ///
 				title("Number of outliers among HS2 gap codes in extra taxes & duties") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6) ///
+				xsize(6.1) ///
 				nofill
+	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_extra.pdf", replace
 			
 //----
@@ -1589,10 +1611,11 @@
 				over(hs2_gap, sort(1) descending) ///
 				ytitle("") ///
 				yscale(range(205)) ///
-				title("# of outliers among HS2 gap codes in total for first three categories") ///
+				title("Number of outliers among HS2 gap codes in total for first three categories") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.5) ///
+				xsize(6.8) ///
 				nofill
+	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_total.pdf", replace
 			
 //----				
@@ -1608,7 +1631,7 @@
 				yscale(range(205)) ///
 				title("Number of outliers among HS2 gap codes in declared custom duties & levies") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7) ///
+				xsize(7.1) ///
 				nofill
 	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_dcust.pdf", replace
@@ -1644,8 +1667,9 @@
 				yscale(range(205)) ///
 				title("Number of outliers among HS2 gap codes in declared extra taxes & duties") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.7) ///
+				xsize(6.8) ///
 				nofill
+	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_dextra.pdf", replace
 
 //----
@@ -1659,11 +1683,12 @@
 				over(hs2_gap, sort(1) descending) ///
 				ytitle("") ///
 				yscale(range(205)) ///
-				title("# of outliers among HS2 gap codes in total for declared categories") ///
+				title("Number of outliers among HS2 gap codes in declared total") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.5) ///
+				xsize(5.8) ///
 				nofill
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_dtotal.pdf", replace
+	
+	graph export "$intermediate_results/Graphs/outliers_3sd_hs2gap_dtotal.pdf", replace
 
 	save "$intermediate_data/Price_data_2907_graph_taxes.dta", replace
 
