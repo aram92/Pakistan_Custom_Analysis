@@ -345,15 +345,17 @@
 	* NUMBER OF OUTLIERS per HS code using 3SD, by month
 	
 	preserve
-
 	keep if outliers_3sd==1
 	
 	graph hbar (sum) outliers_3sd, over(month) by(year) ///
-				yscale(range(6400)) ///
+				ytitle("") ///
+				yscale(range(4300)) ///
+				note("Note: There are no observations for July-December 2018.") ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers by HS code") ///
+				title("Number of outliers by month") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month.pdf", replace
+				
+	graph export "outliers_3sd_month.pdf", replace
 
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
@@ -369,131 +371,103 @@
 
 	* Create bar plot of sum of absolute value of % deviations from the mean by month
 	graph hbar sum_dev_monthyr, over(month) ///
+				yscale(range(245)) ///
 				ytitle("") ///
 				ylabel(#3, format(%9.00fc)) ///
 				by(year, title("Sum of absolute value of % deviations from mean by month") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.00fc) color(black))
 
-	graph export "$intermediate_results/Graphs/outliers_dev_month_year.pdf", replace
+	graph 	export "outliers_dev_month_year.pdf", replace
 	
 	
 				*------------- BAR PLOTS BY SHED -------------*
 //----
 	* NUMBER OF OUTLIERS per HS code using 3SD, by shed
-	
-	* Create graph of # of outliers per shed using 3SD
-	graph hbar (sum) outliers_3sd, by(shed_name) ///
+	* Determine lowest number of outliers for top 10 Sheds
+	ta shed_name outliers_3sd if outliers_3sd==1
+	*It's 358
+
+	* Create a variable that sums number of outliers by Sheds
+	bys shed_name: egen outliers_3sd_shed = sum(outliers_3sd)
+		
+	* Graph top 10 Sheds by number of outliers
+	graph hbar outliers_3sd_shed if outliers_3sd_shed > 357, ///
+				over(shed_name, sort(1) descending) ///
+				yscale(range(21000)) ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers by HS code") ///
+				ytitle("") ///
+				title("Top 10 sheds with most outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph export "$intermediate_results/Graphs/outliers_3sd_shed.pdf", replace
-	
-//----
-	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by shed
-
-	* Create sum of absolute values of percentage of deviation by month
-	bys shed_name: egen sum_dev_shed = sum(abs(per_dev))
-	
-	* Create bar plot of sum of absolute value of % deviations from the mean by shed
-	graph hbar sum_dev_shed, over(shed_name) ///
-				ytitle("") ///
-				ylabel(#3, format(%9.00fc)) ///
-				title("Sum of absolute value of % deviations from mean by shed") ///
-				blabel(bar, position(outside) format(%9.00fc) color(black))
-
-	graph export "$intermediate_results/Graphs/outliers_dev_shed.pdf", replace
-
+	graph 	export "outliers_3sd_shed.pdf", replace
 	
 				*------------- BAR PLOTS BY COUNTRY -------------*
 //----
 	* NUMBER OF OUTLIERS per HS code using 3SD, by country
-
-	* Create graph of # of outliers per country using 3SD
 	
-	graph hbar (count) outliers_3sd if outliers_3sd==1, by(co) ///
+	* Determine lowest number of outliers for top 10 countries
+	ta co outliers_3sd if outliers_3sd==1
+	*It's 653
+
+	* Create a variable that sums number of outliers by countries
+	bys co: egen outliers_3sd_co = sum(outliers_3sd)
+		
+	* Graph top 10 countries by number of outliers
+	graph hbar outliers_3sd_co if outliers_3sd_co > 652, ///
+				over(co, sort(1) descending) ///
+				yscale(range(8100)) ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers by country of origin") ///
+				ytitle("") ///
+				title("Top 10 countries with most outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph export "$intermediate_results/Graphs/outliers_3sd_co.pdf", replace
+	graph 	export "outliers_3sd_co.pdf", replace
 	
-//----
-	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by country
-
-	* Create sum of absolute values of percentage of deviation by country
-	bys co: egen sum_dev_co = sum(abs(per_dev))
-	
-	* Create bar plot of sum of absolute value of % deviations from the mean by country
-	graph hbar sum_dev_co, over(co) ///
-				ytitle("") ///
-				ylabel(#3, format(%9.00fc)) ///
-				title("Sum of absolute value of % deviations from mean by country") ///
-				blabel(bar, position(outside) format(%9.00fc) color(black))
-
-	graph export "$intermediate_results/Graphs/outliers_dev_co.pdf", replace
-		
 
 				*------------- BAR PLOTS BY HS2 CODE -------------*
 //----
 	* NUMBER OF OUTLIERS per HS code using 3SD, by HS2 code
 
-	* Create graph of # of outliers by HS2 code using 3SD
-	
-	graph hbar (count) outliers_3sd if outliers_3sd==1, by(hs2) ///
+	* Determine lowest number for top 10 HS2 codes with most outliers
+	ta hs2 outliers_3sd if outliers_3sd==1
+	*It's 167
+
+	* Create a variable that sums number of outliers for HS2 codes with most outliers
+	bys hs2: egen outliers_3sd_hs2 = sum(outliers_3sd)
+		
+	* Graph top 10 HS2 codes with most outliers
+	graph hbar outliers_3sd_hs2 if outliers_3sd_hs2 > 166, ///
+				over(hs2, sort(1) descending) ///
+				yscale(range(31500)) ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers by HS2 code") ///
+				ytitle("") ///
+				title("Top 10 HS2 codes with most outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2.pdf", replace
+	graph 	export "outliers_3sd_hs2.pdf", replace
 	
-//----
-	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by HS2 code
-
-	* Create sum of absolute values of percentage of deviation by HS2 code
-	bys hs2: egen sum_dev_hs2 = sum(abs(per_dev))
-	
-	* Create bar plot of sum of absolute value of % deviations from the mean by HS2 code
-	graph hbar sum_dev_hs2, over(hs2) ///
-				ytitle("") ///
-				ylabel(#3, format(%9.00fc)) ///
-				title("Sum of absolute value of % deviations from mean by HS2 code") ///
-				blabel(bar, position(outside) format(%9.00fc) color(black))
-
-	graph export "$intermediate_results/Graphs/outliers_dev_hs2.pdf", replace
-
 
 	*------------- BAR PLOTS BY HS2 CODES WITH BIGGEST TRADE GAPS -------------*
 //----
 	* NUMBER OF OUTLIERS per HS code using 3SD, by HS2_Gap codes
 
-	* Create graph of # of outliers by HS2_Gap codes using 3SD
-	
-	graph hbar (count) outliers_3sd if outliers_3sd==1, by(hs2_gap) ///
+	* Create a variable that sums number of outliers by countries
+	bys hs2_gap: egen outliers_3sd_hs2gap = sum(outliers_3sd)
+		
+	* Graph HS2 codes with biggest trade gaps by number of outliers
+	graph hbar outliers_3sd_hs2gap, ///
+				over(hs2_gap, sort(1) descending) ///
+				yscale(range(31000)) ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers by HS2 Gap codes") ///
+				ytitle("") ///
+				title("HS2 codes with biggest trade gaps by number of outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
 	graph export "outliers_3sd_hs2gap.pdf", replace
-	
-//----
-	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by HS2_Gap codes
-
-	* Create sum of absolute values of percentage of deviation by HS2_Gap codes
-	bys hs2: egen sum_dev_hs2_gap = sum(abs(per_dev))
-	
-	* Create bar plot of sum of absolute value of % deviations from the mean by HS2_Gap codes
-	graph hbar sum_dev_hs2_gap, over(hs2_gap) ///
-				ytitle("") ///
-				ylabel(#3, format(%9.00fc)) ///
-				title("Sum of absolute value of % deviations from mean by HS2 Gap codes") ///
-				blabel(bar, position(outside) format(%9.00fc) color(black))
-
-	graph export "$intermediate_results/Graphs/outliers_dev_hs2gap.pdf", replace	
-
 		
 	restore
+
  
  	save "$intermediate_data/Price_data_2907_graphs.dta", replace 
 
