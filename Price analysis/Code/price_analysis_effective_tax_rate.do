@@ -355,7 +355,7 @@
 				title("Number of outliers by month") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 				
-	graph export "outliers_3sd_month.pdf", replace
+	graph export "$intermediate_results/Graphs/outliers_3sd_month.pdf", replace
 
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
@@ -378,7 +378,7 @@
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.00fc) color(black))
 
-	graph 	export "outliers_dev_month_year.pdf", replace
+	graph 	export "$intermediate_results/Graphs/outliers_dev_month_year.pdf", replace
 	
 	
 				*------------- BAR PLOTS BY SHED -------------*
@@ -400,7 +400,7 @@
 				title("Top 10 sheds with most outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph 	export "outliers_3sd_shed.pdf", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed.pdf", replace
 	
 				*------------- BAR PLOTS BY COUNTRY -------------*
 //----
@@ -422,7 +422,7 @@
 				title("Top 10 countries with most outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph 	export "outliers_3sd_co.pdf", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_co.pdf", replace
 	
 
 				*------------- BAR PLOTS BY HS2 CODE -------------*
@@ -445,7 +445,7 @@
 				title("Top 10 HS2 codes with most outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph 	export "outliers_3sd_hs2.pdf", replace
+	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2.pdf", replace
 	
 
 	*------------- BAR PLOTS BY HS2 CODES WITH BIGGEST TRADE GAPS -------------*
@@ -464,7 +464,7 @@
 				title("HS2 codes with biggest trade gaps by number of outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph export "outliers_3sd_hs2gap.pdf", replace
+	graph export "$intermediate_results/Graphs/outliers_3sd_hs2gap.pdf", replace
 		
 	restore
 
