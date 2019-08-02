@@ -375,7 +375,7 @@
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.00fc) color(black))
 
-	graph 	export "$intermediate_results/Graphs/outliers_dev_month_year.pdf", replace
+	graph export "$intermediate_results/Graphs/outliers_dev_month_year.pdf", replace
 	
 	
 				*------------- BAR PLOTS BY SHED -------------*
@@ -388,7 +388,7 @@
 				ytitle("Number of outliers by HS code") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed.pdf", replace
+	graph export "$intermediate_results/Graphs/outliers_3sd_shed.pdf", replace
 	
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by shed
@@ -403,7 +403,7 @@
 				title("Sum of absolute value of % deviations from mean by shed") ///
 				blabel(bar, position(outside) format(%9.00fc) color(black))
 
-	graph 	export "$intermediate_results/Graphs/outliers_dev_shed.pdf", replace
+	graph export "$intermediate_results/Graphs/outliers_dev_shed.pdf", replace
 
 	
 				*------------- BAR PLOTS BY COUNTRY -------------*
@@ -417,7 +417,7 @@
 				ytitle("Number of outliers by country of origin") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_co.pdf", replace
+	graph export "$intermediate_results/Graphs/outliers_3sd_co.pdf", replace
 	
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by country
@@ -463,11 +463,41 @@
 
 	graph export "$intermediate_results/Graphs/outliers_dev_hs2.pdf", replace
 
+
+	*------------- BAR PLOTS BY HS2 CODES WITH BIGGEST TRADE GAPS -------------*
+//----
+	* NUMBER OF OUTLIERS per HS code using 3SD, by HS2_Gap codes
+
+	* Create graph of # of outliers by HS2_Gap codes using 3SD
+	
+	graph hbar (count) outliers_3sd if outliers_3sd==1, by(hs2_gap) ///
+				ylabel(, format(%9.0fc)) ///
+				ytitle("Number of outliers by HS2 Gap codes") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black))
+	
+	graph export "outliers_3sd_hs2gap.pdf", replace
+	
+//----
+	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by HS2_Gap codes
+
+	* Create sum of absolute values of percentage of deviation by HS2_Gap codes
+	bys hs2: egen sum_dev_hs2_gap = sum(abs(per_dev))
+	
+	* Create bar plot of sum of absolute value of % deviations from the mean by HS2_Gap codes
+	graph hbar sum_dev_hs2_gap, over(hs2_gap) ///
+				ytitle("") ///
+				ylabel(#3, format(%9.00fc)) ///
+				title("Sum of absolute value of % deviations from mean by HS2 Gap codes") ///
+				blabel(bar, position(outside) format(%9.00fc) color(black))
+
+	graph export "$intermediate_results/Graphs/outliers_dev_hs2gap.pdf", replace	
+
 		
 	restore
  
  	save "$intermediate_data/Price_data_2907_graphs.dta", replace 
 
+	
 	*************************************************************************
 	* Regression
 	**************************************************************************
