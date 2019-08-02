@@ -31,8 +31,8 @@
 	version 12.1
 	
 	*Installation of a package to export tables as docx files
-	ssc install asdoc
-	ssc install estout
+	*ssc install asdoc
+	*ssc install estout
   
 	dis "`c(username)'" // The text that shows up is the username of your computer (say XXX), and insert that into the code below
 
@@ -62,7 +62,7 @@
 * ---------------------------------------------------------------------------- *
 *  Set globals to allow everyone to use the same code
 * ---------------------------------------------------------------------------- *
-	set scheme plotplainblind
+*	set scheme plotplainblind
 	
 	global initial_data   			"$onedrive/Code"
 	global analysis_data          	"$onedrive/Price analysis" 
@@ -228,7 +228,7 @@
 	gen hs6=int(hs_code*100)
 	
 	*generate yearmonth
-	gen yearmonth=ym(date)
+	gen yearmonth=ym(year,month)
 * ---------------------------------------------------------------------------- *
 * Trial on CI, to be applied on correct unit_price.
 * ---------------------------------------------------------------------------- *
@@ -263,24 +263,21 @@
 
 	* Create mean by HS_Code and yearmonth
 	bys hs6 yearmonth: egen av_unitprice=mean(unit_price_USD)
-
-	* Choose one hs_code to test if the code has worked
-	br unit_price_USD sem_price date month year hs_6 if hs_code==9206	
 		
 	* Create standard deviation by HS_code
-	bys hs_6 yearmonth: egen sd_unitprice= sd(unit_price_USD)
+	bys hs6 yearmonth: egen sd_unitprice= sd(unit_price_USD)
 
 	* Create standard error by HS_code
-	by  hs_6 yearmonth: gen se_unitprice=sd_unitprice/sqrt(_N)
+	by  hs6 yearmonth: gen se_unitprice=sd_unitprice/sqrt(_N)
 
 	* Create lower bound for CI by HS_code using 3SD
-C	bys  hs_6 yearmonth: gen low_3sd=av_unitprice-3*sd_unitprice
+	bys  hs6 yearmonth: gen low_3sd=av_unitprice-3*sd_unitprice
 
 	* Create upper bound for CI by HS_code using 3SD
-	bys hs_6 yearmonth: gen up_3sd=av_unitprice+3*sd_unitprice
+	bys hs6 yearmonth: gen up_3sd=av_unitprice+3*sd_unitprice
 
 	* Create percentage of deviation from the mean by HS_code
-	bys hs_6 yearmonth: gen per_dev=(unit_price_USD - av_unitprice)/av_unitprice
+	bys hs6 yearmonth: gen per_dev=(unit_price_USD - av_unitprice)/av_unitprice
 
 	* Create variable for outliers
 	gen outliers_3sd=1
@@ -499,19 +496,38 @@ C	bys  hs_6 yearmonth: gen low_3sd=av_unitprice-3*sd_unitprice
 	
 	gen hs_code_int=hs_code*100000
 
+	reghdfe, compile
+	ftools, compile
+	
 	eststo clear	
 
+	
 	* @ Aram- I am changing this to make more readable tables 
 	*regress unit_price_USD i.hs2 i.shed_code i.co_code logimpUSD logqua i.year i.month i.currency_code i.channel_code 
-	qui reghdfe unit_price_USD logimpUSD logqua i.channel_code i.shed_code, absorb(i.currency_code i.co_code i.yearmonth i.hs6) vce(cluster shed_code yearmonth)
-	eststo m1 "Unit price"
-	gen dev=per_dev*av_unitprice
-	reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb(i.currency_code i.co_code i.yearmonth i.hs6) vce(cluster shed_code yearmonth)
-	eststo m2 "% Deviation from the mean"
-	reghdfe per_dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb(i.currency_code i.co_code i.yearmonth i.hs6) vce(cluster shed_code yearmonth)
-	eststo m3 "% Deviation from the mean"
+	qui 	reghdfe unit_price_USD logimpUSD logqua i.channel_code i.shed_code, ///
+			absorb(i.currency_code i.co_code i.yearmonth i.hs6) ///
+			vce(cluster shed_code yearmonth)
 	
-	esttab m1 m3 using "$intermediate_results/Tables/Determinants_of_price.rtf", label r2 ar2 ///
+	eststo m1 
+	*"Unit price"
+	
+	gen dev=per_dev*av_unitprice
+	
+	reghdfe 	dev logimpUSD logqua i.channel_code i.shed_code i.hs2, ///
+				absorb(i.currency_code i.co_code i.yearmonth i.hs6) ///
+				vce(cluster shed_code yearmonth)
+				
+	eststo m2 
+	*"% Deviation from the mean"
+	
+	reghdfe 	per_dev logimpUSD logqua i.channel_code i.shed_code i.hs2, ///
+				absorb(i.currency_code i.co_code i.yearmonth i.hs6) ///
+				vce(cluster shed_code yearmonth)
+				
+	eststo m3 
+	*"% Deviation from the mean"
+	
+	esttab 	m1 m3 using "$intermediate_results/Tables/Determinants_of_price.rtf", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
 	
 	* If we really want to include hs_code, not only we need to have it as an 
