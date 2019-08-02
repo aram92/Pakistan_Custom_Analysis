@@ -30,7 +30,7 @@
 	
 	version 12.1
 	
-	*Installation of a package to export tables as docx files
+	*Installation of required packages
 	ssc install asdoc
 	ssc install estout
   
@@ -259,8 +259,9 @@
 	bys hs_code: gen unit_price_USD=imports_USD/quantity
 
 	* Create mean by HS_Code
-	*bys hs_code: egen av_unitprice=mean(unit_price_USD)
+	bys hs_code: egen av_unitprice=mean(unit_price_USD)
 
+	/*
 	* Mean by 6 months interval, to be run at the last moment
 	* Generate the variable that will eventually store the result of our loop
 	
@@ -295,7 +296,7 @@
 
 	* Choose one hs_code to test if the code has worked
 	br unit_price_USD sem_price date month year hs_code if hs_code==9206	
-	
+	*/
 		
 	* Create standard deviation by HS_code
 	bys hs_code: egen sd_unitprice= sd(unit_price_USD)
