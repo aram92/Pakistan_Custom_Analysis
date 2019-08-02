@@ -206,10 +206,25 @@
 	replace QT_code="Kg" if quantity_unit_code=="kg"
 	replace QT_code="Number of items" if quantity_unit_code=="no"
 
-	* KC's additons:
+	* KC's additions:
 	replace shed_name="South Asia Pakistan Terminals" ///
 				if shed_name=="SOUTH ASIA PAKISTAN TERMINALS"
 	replace shed_name="Peshawar Torkham" if shed_name=="PESHAWAR TORKHAM"
+
+  	* Generate a new variable with only the 11 HS2_Gap codes with biggest trade gaps
+	gen hs2_gap = .
+	replace hs2_gap = hs2 if hs2 == 84 | ///
+				 hs2 == 85 | ///
+				 hs2 == 72 | ///
+				 hs2 == 87 | ///
+				 hs2 == 52 | ///
+				 hs2 == 12 | ///
+				 hs2 == 29 | ///
+				 hs2 == 15 | ///
+				 hs2 == 88 | ///
+				 hs2 == 90 | ///
+				 hs2 == 30
+
 
 * ---------------------------------------------------------------------------- *
 * Trial on CI, to be applied on correct unit_price.
@@ -279,198 +294,55 @@
 	}
 
 	* Choose one hs_code to test if the code has worked
-	
 	br unit_price_USD sem_price date month year hs_code if hs_code==9206	
 	
 		
-	* Create sd by HS_code
+	* Create standard deviation by HS_code
 	bys hs_code: egen sd_unitprice= sd(unit_price_USD)
 
-	* Create se by HS_code
+	* Create standard error by HS_code
 	by hs_code: gen se_unitprice=sd_unitprice/sqrt(_N)
 
-	* Create Lower bound for CI by HS_code
-	bys hs_code: gen ci_lower= av_unitprice - (1.96 * se_unitprice)
-
-	* Create Upper bound for CI by HS_code
-	bys hs_code: gen ci_upper= av_unitprice + (1.96 * se_unitprice)
-
-	* Create deviation from the mean by HS_code
-	bys hs_code: gen dev_mean=unit_price_USD - av_unitprice
-
-	* Create percentage of deviation from the mean by HS_code
-	bys hs_code: gen per_dev= dev_mean/av_unitprice
-
-	* Create variable for ouliers
-	gen outliers=1
-
-	* remove from outliers the values within the CI
-	replace outliers=0 if ci_lower<unit_price_USD<ci_upper
-	* in this case we have 1.43% outliers
-	
-	
-	* Determine the % of outliers
-	ta outliers
-
-	br hs_code unit_price_USD av_unitprice se_unitprice ci_lower ci_upper dev_mean per_dev outliers 
-
-	* Redefine ouliers by considering observations outside the 3*sd interval
-	
+	* Create lower bound for CI by HS_code using 3SD
 	bys hs_code: gen low_3sd=av_unitprice-3*sd_unitprice
+
+	* Create upper bound for CI by HS_code using 3SD
 	bys hs_code: gen up_3sd=av_unitprice+3*sd_unitprice
 
+	* Create percentage of deviation from the mean by HS_code
+	bys hs_code: gen per_dev=(unit_price_USD - av_unitprice)/av_unitprice
+
+	* Create variable for outliers
 	gen outliers_3sd=1
+
+	* remove from outliers the values within the CI
 	replace outliers_3sd=0 if low_3sd<unit_price_USD<up_3sd
 	
+	* Determine the % of outliers
+	ta outliers_3sd
 	* In this case we have 1.07% outliers
-	
+
 	save "$intermediate_data/Price_data_2907_outliers.dta", replace 
 
 **************************************************************************
-* Data visualization
+* 			Data Visualization
 **************************************************************************
 	
 	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
 
-	* Determine the % of outliers
-	ta outliers_3sd
 	
+				*------------- BAR PLOTS BY MONTH -------------*
+
 	* Label the variables year and month
 	label variable year "Year"
 	label variable month "Month"
 	label define month_names 1 "Jan" 2 "Feb" 3 "Mar" 4 "Apr" 5 "May" 6 "Jun" ///
 							 7 "Jul" 8 "Aug" 9 "Sep" 10 "Oct" 11 "Nov" 12 "Dec"
 	label values month month_names
-	
-	* Check the distribution and availability of data
-	ta month year
-	* No observations for July-December 2018
-
-	* Check distribution of outliers over month-year
-	bysort year: tab outliers month
-	bysort year: tab outliers_3sd month
-	
-	******	 We first use 95% CI	 ******
-	
-	preserve
-	keep if outliers==1
-	* Create graph of # of outliers per HS code using 95% CI, by month & year
-	graph hbar (count) outliers if outliers==1, over(month) ///
-				ytitle("") ///
-				yscale(range(6400)) ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
-	
-	graph 	export "$intermediate_results/Graphs/outliers_month.pdf", replace
-	
-	restore
-	
-	
-	* Create monthly means 
-	bys year month: egen av_unitprice_monthyr=mean(unit_price_USD)
-
-	* Create deviation from the mean by month
-	bys year month: gen dev_mean_monthyr=unit_price_USD - av_unitprice_monthyr
-
-	* Create percentage of deviation from the monthly means
-	bys year month: gen per_dev_monthyr= dev_mean_month/av_unitprice_monthyr
-	
-	* Create sum of absolute values of percentage of deviation from the monthly mean
-	bys year month: egen sum_dev_monthyr = sum(abs(per_dev_monthyr))
-	
-	sum sum_dev_monthyr
-	* Create bar plot of sum of absolute value of % deviations from the mean per month
-	graph hbar sum_dev_monthyr, over(month) ///
-				ytitle("") ///
-				ylabel(#3, format(%9.00fc)) ///
-				by(year, title("Sum of absolute value of % deviations from the mean per month") ///
-				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.00fc) color(black))
-
-	graph 	export "$intermediate_results/Graphs/outliers_dev_month_year.pdf", replace
-			
-	* Create index for shed names & then a facet variable for the following graph
-	/*egen shed_index = group(shed_name)
-	gen shed_facet = 1 if shed_index<14 & shed_index !=.
-	replace shed_facet = 2 if shed_index>13 & shed_index<27 & shed_index !=.
-	replace shed_facet = 3 if shed_index>26 & shed_index<40 & shed_index !=.
-	replace shed_facet = 4 if shed_index>39 & shed_index !=.
-*/
-	* Create graph of # of outliers per shed using 95% CI
-	preserve
-	keep if outliers==1
-	
-/*	graph hbar (count) outliers if outliers==1, ///
-				over(shed_name, sort(1) descending) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				by(shed_facet, title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by Shed") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				ysize(20)
-
-	graph 	export "$intermediate_results/Graphs/outliers_shed.pdf", replace
 				
-	* Create graph of # of outliers per country using 95% CI
-	graph hbar (count) outliers if outliers==1, over(co) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				title("Number of outliers per COuntry of origin") ///
-				subtitle("using 95% confidence intervals, by Country") ///
-				note("Note: There are no observations for July-December 2018.") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
-	
-	graph 	export "$intermediate_results/Graphs/outliers_co.pdf", replace
-				
-	* Create graph of # of outliers per HS2 code using 95% CI				
-	graph hbar (count) outliers if outliers==1, over(hs2) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				title("Number of outliers per HS code") ///
-				subtitle("using 95% confidence intervals, by HS2 codes") ///
-				note("Note: There are no observations for July-December 2018.") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
-
-	graph 	export "$intermediate_results/Graphs/outliers_hs2.pdf", replace
-	*/
-	
-	* Aram: I suggest to use by instead of over for the moment to have more 
-	* lisibility in country, shed and hs2
-	
-	graph hbar (sum) outliers, ///
-				by(shed_name) ///
-				ytitle("Number of outliers per HS code")		///
-				ylabel(, format(%9.0fc)) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) 
-
-	graph 	export "$intermediate_results/Graphs/outliers_shed.pdf", replace
-				
-	* Create graph of # of outliers per country using 95% CI
-	graph hbar (sum) outliers, by(co) ///
-				ytitle("Number of outliers per Country of origin") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
-	
-	graph 	export "$intermediate_results/Graphs/outliers_co.pdf", replace
-				
-	* Create graph of # of outliers per HS2 code using 95% CI				
-	graph hbar (sum) outliers, by(hs2) ///
-				ytitle("Number of outliers per HS code") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
-
-	graph 	export "$intermediate_results/Graphs/outliers_hs2.pdf", replace
-	
-	
-
-	restore
-	
-	******		We then use 3SD		******		
-	
-	* Create graph of # of outliers per HS code using 3SD, by month & year
+		
+//----
+	* NUMBER OF OUTLIERS per HS code using 3SD, by month
 	
 	preserve
 
@@ -479,38 +351,119 @@
 	graph hbar (sum) outliers_3sd, over(month) by(year) ///
 				yscale(range(6400)) ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers per HS code") ///
+				ytitle("Number of outliers by HS code") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_month.pdf", replace
 
-	* Create graph of # of outliers per shed using 3SD
+//----
+	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
 	
+	* Check the distribution and availability of data
+	ta month year
+	* No observations for July-December 2018
+		
+	* Create sum of absolute values of percentage of deviation by month
+	bys year month: egen sum_dev_monthyr = sum(abs(per_dev))
+	
+	sum sum_dev_monthyr
+
+	* Create bar plot of sum of absolute value of % deviations from the mean by month
+	graph hbar sum_dev_monthyr, over(month) ///
+				ytitle("") ///
+				ylabel(#3, format(%9.00fc)) ///
+				by(year, title("Sum of absolute value of % deviations from mean by month") ///
+				note("Note: There are no observations for July-December 2018.")) ///
+				blabel(bar, position(outside) format(%9.00fc) color(black))
+
+	graph 	export "$intermediate_results/Graphs/outliers_dev_month_year.pdf", replace
+	
+	
+				*------------- BAR PLOTS BY SHED -------------*
+//----
+	* NUMBER OF OUTLIERS per HS code using 3SD, by shed
+	
+	* Create graph of # of outliers per shed using 3SD
 	graph hbar (sum) outliers_3sd, by(shed_name) ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers per HS code") ///
+				ytitle("Number of outliers by HS code") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed.pdf", replace
 	
+//----
+	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by shed
+
+	* Create sum of absolute values of percentage of deviation by month
+	bys shed_name: egen sum_dev_shed = sum(abs(per_dev))
 	
+	* Create bar plot of sum of absolute value of % deviations from the mean by shed
+	graph hbar sum_dev_shed, over(shed_name) ///
+				ytitle("") ///
+				ylabel(#3, format(%9.00fc)) ///
+				title("Sum of absolute value of % deviations from mean by shed") ///
+				blabel(bar, position(outside) format(%9.00fc) color(black))
+
+	graph 	export "$intermediate_results/Graphs/outliers_dev_shed.pdf", replace
+
+	
+				*------------- BAR PLOTS BY COUNTRY -------------*
+//----
+	* NUMBER OF OUTLIERS per HS code using 3SD, by country
+
 	* Create graph of # of outliers per country using 3SD
 	
 	graph hbar (count) outliers_3sd if outliers_3sd==1, by(co) ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers per Country of origin") ///
+				ytitle("Number of outliers by country of origin") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_co.pdf", replace
-				
-	* Create graph of # of outliers per HS2 code using 95% CI				
+	
+//----
+	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by country
+
+	* Create sum of absolute values of percentage of deviation by country
+	bys co: egen sum_dev_co = sum(abs(per_dev))
+	
+	* Create bar plot of sum of absolute value of % deviations from the mean by country
+	graph hbar sum_dev_co, over(co) ///
+				ytitle("") ///
+				ylabel(#3, format(%9.00fc)) ///
+				title("Sum of absolute value of % deviations from mean by country") ///
+				blabel(bar, position(outside) format(%9.00fc) color(black))
+
+	graph export "$intermediate_results/Graphs/outliers_dev_co.pdf", replace
+		
+
+				*------------- BAR PLOTS BY HS2 CODE -------------*
+//----
+	* NUMBER OF OUTLIERS per HS code using 3SD, by HS2 code
+
+	* Create graph of # of outliers by HS2 code using 3SD
 	
 	graph hbar (count) outliers_3sd if outliers_3sd==1, by(hs2) ///
 				ylabel(, format(%9.0fc)) ///
-				ytitle("Number of outliers per HS code") ///
+				ytitle("Number of outliers by HS2 code") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
-
+	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2.pdf", replace
 	
+//----
+	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN by HS2 code
+
+	* Create sum of absolute values of percentage of deviation by HS2 code
+	bys hs2: egen sum_dev_hs2 = sum(abs(per_dev))
+	
+	* Create bar plot of sum of absolute value of % deviations from the mean by HS2 code
+	graph hbar sum_dev_hs2, over(hs2) ///
+				ytitle("") ///
+				ylabel(#3, format(%9.00fc)) ///
+				title("Sum of absolute value of % deviations from mean by HS2 code") ///
+				blabel(bar, position(outside) format(%9.00fc) color(black))
+
+	graph export "$intermediate_results/Graphs/outliers_dev_hs2.pdf", replace
+
+		
 	restore
  
  	save "$intermediate_data/Price_data_2907_graphs.dta", replace 
@@ -550,6 +503,8 @@
 
 
 	save "$intermediate_data/Price_data_2907_regression.dta", replace
+
+
 
 * ---------------------------------------------------------------------------- *
 * 			Simulation on taxes to determine currency and discrepancies
@@ -749,7 +704,10 @@
 	save "$intermediate_data/Price_data_2907_taxes.dta", replace
 
 	
-**** Custom duties & levies				
+				*------------- BAR PLOTS BY MONTH -------------*
+//----
+	* CUSTOM DUTIES & LEVIES
+				
 	* Create graph of # of outliers per HS code using 3SD, by MONTH & YEAR
 	
 	use "$intermediate_data/Price_data_2907_taxes.dta", clear
@@ -769,7 +727,8 @@
 
 	restore
 	
-**** Taxes
+//----
+	* TAXES
 
 	preserve
 	keep if outliers_sd3_taxes==1
@@ -788,7 +747,8 @@
 
 	restore
 	
-*** Extra taxes and duties
+//----
+	* EXTRA TAXES & DUTIES
 
 	preserve
 	keep if outliers_sd3_extra==1
@@ -806,7 +766,9 @@
 				
 	restore
 	
-*** Total of first three categories
+//----
+	* TOTAL OF FIRST THREE CATEGORIES
+
 	preserve
 	keep if outliers_sd3_total==1
 
@@ -823,7 +785,9 @@
 	
 	restore
 	
-**** Declared custom duties & levies
+//----
+	* DECLARED CUSTOM DUTIES & LEVIES
+
 	preserve
 	keep if outliers_sd3_dcust==1
 	
@@ -840,8 +804,9 @@
 		
 	restore
 	
-	
-*** Declared taxes
+//----
+	* DECLARED TAXES
+
 	preserve
 	keep if outliers_sd3_dtaxes==1
 	
@@ -859,7 +824,9 @@
 		
 	restore
 	
-***	Declared extra taxes and duties	
+//----
+	* DECLARED EXTRA TAXES & DUTIES
+	
 	preserve
 	keep if outliers_sd3_dextra==1
 	
@@ -877,7 +844,9 @@
 
 	restore	
 	
-***	Total of the three declared categories
+//----
+	* TOTAL OF THE THREE DECLARED CATEGORIES
+
 	preserve
 	keep if outliers_sd3_total==1
 		
@@ -896,7 +865,7 @@
 	restore			
 
 	
-	*------------- Bar plot by shed -------------*
+					*------------- Bar plot by shed -------------*
 	
 	* CUSTOMS DUTIES & LEVIES
 	
@@ -1531,21 +1500,7 @@
 
 	restore
 	
-  *------------- Bar plots by HS2 codes with biggest trade gaps -------------*							
-
-  * Generate a new variable with only the 11 HS2_Gap codes with biggest trade gaps
-  gen hs2_gap = .
-  replace hs2_gap = hs2 if hs2 == 84 | ///
-							hs2 == 85 | ///
-							hs2 == 72 | ///
-							hs2 == 87 | ///
-							hs2 == 52 | ///
-							hs2 == 12 | ///
-							hs2 == 29 | ///
-							hs2 == 15 | ///
-							hs2 == 88 | ///
-							hs2 == 90 | ///
-							hs2 == 30
+ 		 *------------- Bar plots by HS2 codes with biggest trade gaps -------------*							
   
 //----
 	* CUSTOMS DUTIES & LEVIES
