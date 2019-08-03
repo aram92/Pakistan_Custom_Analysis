@@ -225,8 +225,11 @@
 				 hs2 == 90 | ///
 				 hs2 == 30
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 =======
+=======
+>>>>>>> Stashed changes
 	
 	*generate hs6 code:
 	gen hs6=int(hs_code*100)
@@ -267,6 +270,9 @@
 	
 	* Setting font for graphs to Times New Roman
 	graph set window fontface "Times New Roman"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 * ---------------------------------------------------------------------------- *
@@ -377,6 +383,7 @@
 	
 				*------------- BAR PLOTS BY MONTH -------------*
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 	* Label the variables year and month
 	label variable year "Year"
@@ -389,6 +396,8 @@
 //----
 	* NUMBER OF OUTLIERS per HS code using 3SD, by month
 =======
+=======
+>>>>>>> Stashed changes
 		
 //----
 	* NUMBER OF OUTLIERS per HS code using 3SD, by month
@@ -398,11 +407,15 @@
 	keep if outliers_3sd==1
 	*collapse per hs6 shed_name yearmoth and origin country: count to have the number of outliers, sum of absolute deviation)
 	collapse (sum) abs_dev (count) outliers_3sd, by(hs6 shed_name yearmonth co) 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 	
 	preserve
 	keep if outliers_3sd==1
 	
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 	graph hbar (sum) outliers_3sd, over(month) by(year) ///
 				ytitle("") ///
@@ -434,6 +447,35 @@
 				by(year, title("Sum of absolute value of % deviations from mean by month") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.00fc) color(black))
+=======
+	collapse (sum) abs_dev (count) outliers_3sd, by(yearmonth) 
+	
+	* Create barplot of monthly number of outlier deviations from average price
+	graph hbar outliers_3sd, over(yearmonth) ///
+				title("Monthly number of outlier deviations from average prices") ///
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				ytitle("") ///				
+				yscale(range(650) off) ///
+				ylabel(,nogrid) ///
+				xsize(6.5) ///
+				scheme(s1color)
+				
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_month.pdf", replace
+	
+	
+//----
+	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
+	
+	* Create bar plot of sum of absolute value of % deviations from the mean by month
+	graph hbar abs_dev, over(yearmonth) ///
+				title("Monthly sum of outlier deviations from average prices") ///
+				blabel(bar, position(outside) format(%9.3fc) color(black)) ///
+				ytitle("") ///
+				yscale(off) ///	
+				ylabel(,nogrid) ///
+				xsize(6) ///
+				scheme(s1color)
+>>>>>>> Stashed changes
 
 	graph 	export "$intermediate_results/Graphs/outliers_dev_month_year.pdf", replace
 	
@@ -562,13 +604,19 @@
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 				title("Top 10 countries with most outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 =======
+=======
+>>>>>>> Stashed changes
 				yscale(off) ///
 				ylabel(, nogrid) ///
 				xsize(7) ///
 				scheme(s1color)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_co.pdf", replace
@@ -617,12 +665,15 @@
 	graph hbar outliers_3sd_hs2 if outliers_3sd_hs2 > 166, ///
 				over(hs2, sort(1) descending) ///
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 				yscale(range(31500)) ///
 				ylabel(, format(%9.0fc)) ///
 				ytitle("") ///
 				title("Top 10 HS2 codes with most outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 =======
+=======
+>>>>>>> Stashed changes
 				title("Top 10 HS2 codes with most outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///			
@@ -630,6 +681,9 @@
 				ylabel(, nogrid) ///
 				xsize(6) ///
 				scheme(s1color)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 	
 	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2.pdf", replace
@@ -664,6 +718,7 @@
 		
 	* Graph HS2 codes with biggest trade gaps by number of outliers
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 	graph hbar outliers_3sd_hs2gap, ///
 				over(hs2_gap, sort(1) descending) ///
 				yscale(range(31000)) ///
@@ -672,6 +727,8 @@
 				title("HS2 codes with biggest trade gaps by number of outliers") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 =======
+=======
+>>>>>>> Stashed changes
 	graph hbar outliers, ///
 				over(hs2_gap) ///
 				title("HS2 codes with biggest trade gaps by number of outlier deviations from average prices") ///
@@ -697,6 +754,9 @@
 	
 	graph export "$intermediate_results/Graphs/Price_absdev_hs2gap.pdf", replace
 	
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 	
 	restore
