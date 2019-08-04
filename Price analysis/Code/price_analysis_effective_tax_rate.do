@@ -503,31 +503,28 @@
 
 	
 	* @ Aram- I am changing this to make more readable tables 
+	*Aram skipping the first reg if it crashes your computer
 	*regress unit_price_USD i.hs2 i.shed_code i.co_code logimpUSD logqua i.year i.month i.currency_code i.channel_code 
-	qui 	reghdfe unit_price_USD logimpUSD logqua i.channel_code i.shed_code, ///
-			absorb(i.currency_code i.co_code i.yearmonth i.hs6) ///
-			vce(cluster shed_code yearmonth)
+	*qui 	reghdfe unit_price_USD logimpUSD logqua i.channel_code i.shed_code, ///
+	*		absorb(i.currency_code i.co_code i.yearmonth i.hs6) ///
+	*		vce(cluster shed_code yearmonth)
 	
-	eststo m1 
+	*eststo m1 
 	*"Unit price"
 	
 	gen dev=per_dev*av_unitprice
 	
-	reghdfe 	dev logimpUSD logqua i.channel_code i.shed_code i.hs2, ///
-				absorb(i.currency_code i.co_code i.yearmonth i.hs6) ///
-				vce(cluster shed_code yearmonth)
+	areg dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code )
 				
 	eststo m2 
 	*"% Deviation from the mean"
 	
-	reghdfe 	per_dev logimpUSD logqua i.channel_code i.shed_code i.hs2, ///
-				absorb(i.currency_code i.co_code i.yearmonth i.hs6) ///
-				vce(cluster shed_code yearmonth)
+	areg per_dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code yearmonth)
 				
 	eststo m3 
 	*"% Deviation from the mean"
 	
-	esttab 	m1 m3 using "$intermediate_results/Tables/Determinants_of_price.rtf", label r2 ar2 ///
+	esttab 	m2 m3 using "$intermediate_results/Tables/Determinants_of_PirceDeviation.rtf", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
 	
 	* If we really want to include hs_code, not only we need to have it as an 
@@ -613,76 +610,27 @@
 	gen per_tax_price=(tax_USD/imports_USD)*100
 
 	gen dec_per_tax_price=(dec_tax_USD/imports_USD)*100
-
-
-	* Create means by HS code
-	bys hs_code: egen av_cust_duty_levies = mean(cust_duty_levies)
-	bys hs_code: egen av_taxes = mean(taxes)
-	bys hs_code: egen av_extra_taxes = mean(extra_taxes)
-	bys hs_code: egen av_total_taxes = mean(total_taxes)
-	bys hs_code: egen av_decl_cust = mean(decl_cust)
-	bys hs_code: egen av_decl_taxes = mean(decl_taxes)
-	bys hs_code: egen av_decl_extra_taxes = mean(decl_extra_taxes)
-	bys hs_code: egen av_decl_total = mean(decl_total)
-
-	* Create SDs by HS code
-	bys hs_code: egen sd_cust_duty_levies = sd(cust_duty_levies)
-	bys hs_code: egen sd_taxes = sd(taxes)
-	bys hs_code: egen sd_extra_taxes = sd(extra_taxes)
-	bys hs_code: egen sd_total_taxes = sd(total_taxes)
-	bys hs_code: egen sd_decl_cust = sd(decl_cust)
-	bys hs_code: egen sd_decl_taxes = sd(decl_taxes)
-	bys hs_code: egen sd_decl_extra_taxes = sd(decl_extra_taxes)
-	bys hs_code: egen sd_decl_total = sd(decl_total)
-
-	* Create Lower bound for CI by HS code using 3SD
-	bys hs_code: gen sd3_lower_cust= av_cust_duty_levies - (3 * sd_cust_duty_levies)
-	bys hs_code: gen sd3_lower_taxes= av_taxes - (3 * sd_taxes)
-	bys hs_code: gen sd3_lower_extra= av_extra_taxes - (3 * sd_extra_taxes)
-	bys hs_code: gen sd3_lower_total= av_total_taxes - (3 * sd_total_taxes)
-	bys hs_code: gen sd3_lower_dcust= av_decl_cust - (3 * sd_decl_cust)
-	bys hs_code: gen sd3_lower_dtaxes= av_decl_taxes - (3 * sd_decl_taxes)
-	bys hs_code: gen sd3_lower_dextra= av_decl_extra_taxes - (3 * sd_decl_extra_taxes)
-	bys hs_code: gen sd3_lower_dtotal= av_decl_total - (3 * sd_decl_total)
-
-	* Create Upper bound for CI by HS code using 3SD
-	bys hs_code: gen sd3_upper_cust= av_cust_duty_levies + (3 * sd_cust_duty_levies)
-	bys hs_code: gen sd3_upper_taxes= av_taxes + (3 * sd_taxes)
-	bys hs_code: gen sd3_upper_extra= av_extra_taxes + (3 * sd_extra_taxes)
-	bys hs_code: gen sd3_upper_total= av_total_taxes + (3 * sd_total_taxes)
-	bys hs_code: gen sd3_upper_dcust= av_decl_cust + (3 * sd_decl_cust)
-	bys hs_code: gen sd3_upper_dtaxes= av_decl_taxes + (3 * sd_decl_taxes)
-	bys hs_code: gen sd3_upper_dextra= av_decl_extra_taxes + (3 * sd_decl_extra_taxes)
-	bys hs_code: gen sd3_upper_dtotal= av_decl_total + (3 * sd_decl_total)
 	
-	* Create variable for outliers using 3SD
-	gen outliers_sd3_cust=1
-	gen outliers_sd3_taxes=1
-	gen outliers_sd3_extra=1
-	gen outliers_sd3_total=1
-	gen outliers_sd3_dcust=1
-	gen outliers_sd3_dtaxes=1
-	gen outliers_sd3_dextra=1
-	gen outliers_sd3_dtotal=1
+	local category_taxes cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total
+	foreach var in category_taxes {
+		* Create means, SD by HS code
+		bys hs6 yearmonth: egen av_`var'= mean(`var')
+		bys hs6 yearmonth: egen sd_`var' = sd(`var')
+		
+		* Create Lower bound for CI by HS code using 3SD
+		bys hs6 yearmonth: gen sd3LB_`var'= av_`var' - (3 * sd_`var')
+	
+		* Create Upper bound for CI by HS code using 3SD
+		bys hs6 yearmonth: gen sd3UB_`var'= av_`var' + (3 * sd_`var')
+	
+		* Create variable for outliers using 3SD
+		gen o_`var'=1
 
-	* Remove from outliers the values within 3SD
-	replace outliers_sd3_cust=0 if sd3_lower_cust<cust_duty_levies<sd3_upper_cust
-	replace outliers_sd3_taxes=0 if sd3_lower_taxes<taxes<sd3_upper_taxes
-	replace outliers_sd3_extra=0 if sd3_lower_extra<extra_taxes<sd3_upper_extra
-	replace outliers_sd3_total=0 if sd3_lower_total<total_taxes<sd3_upper_total
-	replace outliers_sd3_dcust=0 if sd3_lower_dcust<decl_cust<sd3_upper_dcust
-	replace outliers_sd3_dtaxes=0 if sd3_lower_dtaxes<decl_taxes<sd3_upper_dtaxes
-	replace outliers_sd3_dextra=0 if sd3_lower_dextra<decl_extra_taxes<sd3_upper_dextra
-	replace outliers_sd3_dtotal=0 if sd3_lower_dtotal<decl_total<sd3_upper_dtotal
-
-	label variable outliers_sd3_cust "Outliers in custom duties & levies"
-	label variable outliers_sd3_taxes "Outliers in taxes"
-	label variable outliers_sd3_extra "Outliers in extra taxes and duties"
-	label variable outliers_sd3_total "Outliers in total of three categories"
-	label variable outliers_sd3_dcust "Outliers in declared custom duties & levies"
-	label variable outliers_sd3_dtaxes "Outliers in declared taxes"
-	label variable outliers_sd3_dextra "Outliers in declared extra taxes and duties"
-	label variable outliers_sd3_dtotal "Outliers in declared total of three categories"
+		* Remove from outliers the values within 3SD
+		replace o_`var'=0 if sd3LB_`var'<cust_duty_levies<sd3UB_`var'
+	
+	label variable o_cust_duty_levies "Outliers in custom duties & levies"
+	label variable o_cust_duty_levies "Outliers in custom duties & levies"
 
 	label define outliers_cust 0 "Not Outlier" 1 "Outlier"
 	label define outliers_taxes 0 "Not Outlier" 1 "Outlier"
