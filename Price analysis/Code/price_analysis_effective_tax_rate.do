@@ -748,48 +748,7 @@
 
 	
 	save "$intermediate_data/Price_data_2907_taxes.dta", replace
-	
-	
-=======
-	label values o_extra outliers_extra
-	label values o_total outliers_total
-	label values o_dcust outliers_dcust
-	label values o_dtaxes outliers_dtaxes
-	label values o_dextra outliers_dextra
-	label values o_dtotal outliers_dtotal
-	
-	* Determine the % of outliers (3SD): @Kaustub: by this definition of outliers, and if the data were normally distributed, 
-	*we should have around 0.1 to 0.5 % outliers max
-	/*ta outliers_sd3_cust
-//	0.09% of observations are outliers
 
-	ta outliers_sd3_taxes
-//	0.03% of observations are outliers
-
-	ta outliers_sd3_extra
-//	0.09% of observations are outliers
-
-	ta outliers_sd3_total
-//	0.03% of observations are outliers
-
-	ta outliers_sd3_dcust
-//	0.09% of observations are outliers
-
-	ta outliers_sd3_dtaxes
-//	0.03% of observations are outliers
-
-	ta outliers_sd3_dextra
-//	0.09% of observations are outliers
-
-	ta outliers_sd3_dtotal
-//	0.03% of observations are outliers
- */
- 
-	asdoc tab1 outliers_sd3_cust outliers_sd3_taxes outliers_sd3_extra ///
-				outliers_sd3_total outliers_sd3_dcust outliers_sd3_dtaxes ///
-				outliers_sd3_dextra outliers_sd3_dtotal, replace label
-	
-	save "$intermediate_data/Price_data_2907_taxes.dta", replace
 
 				*------------- BAR PLOTS BY MONTH -------------*
 //----
