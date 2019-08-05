@@ -593,7 +593,7 @@
 	* We have a larger number of discrepancies with higher variations as well (now
 	* 95% of the discrepancies = 0 , around 10,000 observations)
 
-	* Total as percentage of original price
+	* Total as percentage of original price 
 
 	* For this we need to merge the data set containing the exchange rate variable
 
@@ -605,7 +605,7 @@
 
 	gen dec_tax_USD=decl_total/USDollar
 
-	* Total taxes
+	* Total taxes: !!!! The other categories needs to be expressed in % as well!
 
 	gen per_tax_price=(tax_USD/imports_USD)*100
 
@@ -616,6 +616,7 @@
 		* Create means, SD by HS code
 		bys hs6 yearmonth: egen av_`var'= mean(`var')
 		bys hs6 yearmonth: egen sd_`var' = sd(`var')
+		gen dev`var'=`var'-av`var'
 		
 		* Create Lower bound for CI by HS code using 3SD
 		bys hs6 yearmonth: gen sd3LB_`var'= av_`var' - (3 * sd_`var')
@@ -628,10 +629,16 @@
 
 		* Remove from outliers the values within 3SD
 		replace o_`var'=0 if sd3LB_`var'<cust_duty_levies<sd3UB_`var'
+	}
+	label variable o_cust_duty_levies "Outliers in custom duties & levies"
+	label variable o_taxes "Outliers in taxes"
+	label variable o_extra_taxes "Outliers in extra taxes"
+	label variable o_total_taxes "Outliers in total taxes"
+	label variable o_decl_cust_duty_levies "Outliers in declared custom duties & levies"
+	label variable o_decl_taxes "Outliers in declared taxes"
+	label variable o_decl_extra_taxes "Outliers in declared extra taxes"
+	label variable o_decl_total_taxes "Outliers in declared total taxes"
 	
-	label variable o_cust_duty_levies "Outliers in custom duties & levies"
-	label variable o_cust_duty_levies "Outliers in custom duties & levies"
-
 	label define outliers_cust 0 "Not Outlier" 1 "Outlier"
 	label define outliers_taxes 0 "Not Outlier" 1 "Outlier"
 	label define outliers_extra 0 "Not Outlier" 1 "Outlier"
@@ -641,17 +648,18 @@
 	label define outliers_dextra 0 "Not Outlier" 1 "Outlier"
 	label define outliers_dtotal 0 "Not Outlier" 1 "Outlier"
 	
-	label values outliers_sd3_cust outliers_cust
-	label values outliers_sd3_taxes outliers_taxes
-	label values outliers_sd3_extra outliers_extra
-	label values outliers_sd3_total outliers_total
-	label values outliers_sd3_dcust outliers_dcust
-	label values outliers_sd3_dtaxes outliers_dtaxes
-	label values outliers_sd3_dextra outliers_dextra
-	label values outliers_sd3_dtotal outliers_dtotal
+	label values o_cust_duty_levies outliers_cust
+	label values o_taxes outliers_taxes
+	label values o_extra outliers_extra
+	label values o_total outliers_total
+	label values o_dcust outliers_dcust
+	label values o_dtaxes outliers_dtaxes
+	label values o_dextra outliers_dextra
+	label values o_dtotal outliers_dtotal
 	
-	* Determine the % of outliers (3SD)
-	ta outliers_sd3_cust
+	* Determine the % of outliers (3SD): @Kaustub: by this definition of outliers, and if the data were normally distributed, 
+	*we should have around 0.1 to 0.5 % outliers max
+	/*ta outliers_sd3_cust
 //	0.09% of observations are outliers
 
 	ta outliers_sd3_taxes
@@ -674,174 +682,48 @@
 
 	ta outliers_sd3_dtotal
 //	0.03% of observations are outliers
-
+ */
  
 	asdoc tab1 outliers_sd3_cust outliers_sd3_taxes outliers_sd3_extra ///
 				outliers_sd3_total outliers_sd3_dcust outliers_sd3_dtaxes ///
 				outliers_sd3_dextra outliers_sd3_dtotal, replace label
 	
 	save "$intermediate_data/Price_data_2907_taxes.dta", replace
-
-	
+	collapse (sum) dev* (count) o_*, by(hs6 shed_code yearmonth co) 
 				*------------- BAR PLOTS BY MONTH -------------*
 //----
-	* CUSTOM DUTIES & LEVIES
 				
 	* Create graph of # of outliers per HS code using 3SD, by MONTH & YEAR
 	
 	use "$intermediate_data/Price_data_2907_taxes.dta", clear
 
 	preserve
-	keep if outliers_sd3_cust==1
 	
-	graph hbar (count) outliers_sd3_cust, over(month) ///
+	foreach var in category_taxes {
+	keep if o_`var'==1
+	graph hbar (count) o_`var', over(monthyear) ///
 				ytitle("") ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code for custom duties & levies") ///
+				by(year, title("Number of outliers per HS code for `"`: var label'"' ") ///
 				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_cust.pdf", replace
+	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_month.pdf", replace
 
-	restore
-	
-//----
-	* TAXES
-
-	preserve
-	keep if outliers_sd3_taxes==1
-	
-
-	graph hbar (count) outliers_sd3_taxes, over(month) ///
+graph hbar (sum) dev`var', over(monthyear) ///
 				ytitle("") ///
-				yscale(range(158)) ///
 				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code for taxes") ///
+				by(year, title("sum of deviations per HS code for `"`: var label'"' ") ///
 				subtitle("by month and year") ///
 				note("Note: There are no observations for July-December 2018.")) ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_taxes.pdf", replace
+	
+	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_month.pdf", replace
 
 	restore
-	
-//----
-	* EXTRA TAXES & DUTIES
-
-	preserve
-	keep if outliers_sd3_extra==1
-	
-
-	graph hbar (count) outliers_sd3_extra, over(month) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code for extra taxes & duties") ///
-				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_extra.pdf", replace
-				
-	restore
-	
-//----
-	* TOTAL OF FIRST THREE CATEGORIES
-
-	preserve
-	keep if outliers_sd3_total==1
-
-	graph hbar (count) outliers_sd3_total, over(month) ///
-				ytitle("") ///
-				yscale(range(157)) ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code for total") ///
-				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))				
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_total.pdf", replace
-	
-	restore
-	
-//----
-	* DECLARED CUSTOM DUTIES & LEVIES
-
-	preserve
-	keep if outliers_sd3_dcust==1
-	
-	graph hbar (count) outliers_sd3_dcust, over(month) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code for declared custom duties & levies") ///
-				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.1)
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dcust.pdf", replace
-		
-	restore
-	
-//----
-	* DECLARED TAXES
-
-	preserve
-	keep if outliers_sd3_dtaxes==1
-	
-
-	graph hbar (count) outliers_sd3_dtaxes, over(month) ///
-				ytitle("") ///
-				yscale(range(157)) ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code for declared taxes") ///
-				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dtaxes.pdf", replace
-		
-	restore
-	
-//----
-	* DECLARED EXTRA TAXES & DUTIES
-	
-	preserve
-	keep if outliers_sd3_dextra==1
-	
-	graph hbar (count) outliers_sd3_dextra, over(month) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code for declared extra taxes & duties") ///
-				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6)
-				
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dextra.pdf", replace
-
-	restore	
-	
-//----
-	* TOTAL OF THE THREE DECLARED CATEGORIES
-
-	preserve
-	keep if outliers_sd3_total==1
-		
-	graph hbar (count) outliers_sd3_dtotal if outliers_sd3_dtotal==1, over(month) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				yscale(range(157)) ///
-				by(year, title("Number of outliers per HS code for declared total") ///
-				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6)
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_month_dtotal.pdf", replace
-				
-	restore			
+	}
+//----	
 
 	
 					*------------- Bar plot by shed -------------*
@@ -853,632 +735,108 @@
 	*It's 26
 
 	* Create a variable that sums number of outliers by Sheds
-	bys shed_name: egen outliers_cust_shed = sum(outliers_sd3_cust)
-		
-	* Graph top 10 Sheds by number of outliers
 	preserve
-	keep if outliers_cust_shed>25	
+	collapse (sum) dev* (count) o_*, by(shed_code) 
 
-	graph hbar outliers_cust_shed if outliers_cust_shed > 25, ///
+	* Graph top 10 Sheds by number of outliers
+		foreach var in category_taxes {
+		keep if o_`var'==1
+		gsort -o_`var'
+		graph hbar o_`var' in 1/10,  ///
 				over(shed_name, sort(1) descending) ///
 				yscale(range(1100)) ///
 				ytitle("") ///
-				title("Top 10 sheds with most outliers in customs & levies") ///
+				title("Top 10 sheds with most outliers in `"`: var label'"' ") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(7.3) ///
 				nofill
 	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_cust.pdf", replace
-	
-	restore
-	
-//----
-	* TAXES
-	
-	* Determine lowest number of outliers for top 10 Sheds
-	ta shed_name outliers_sd3_taxes if outliers_sd3_taxes==1
-	*It's 12
-	
-	* Create a variable that sums number of outliers by Sheds
-	bys shed_name: egen outliers_taxes_shed = sum(outliers_sd3_taxes)
-	
-	* Graph top 10 Sheds by number of outliers
-	preserve
-	keep if outliers_taxes_shed>11
-	
-	graph hbar outliers_taxes_shed if outliers_taxes_shed > 11, ///
+	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_shed.pdf", replace
+		gsort -dev
+		graph hbar dev in 1/10,  ///
 				over(shed_name, sort(1) descending) ///
-				ytitle("") ///
-				title("Top 10 sheds with most outliers in taxes") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.5) ///
-				nofill
-				
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_taxes.pdf", replace
-	
-	restore	
-	
-//----
-	* EXTRA TAXES & DUTIES
-	
-	* Determine lowest number of outliers for top 10 Sheds
-	ta shed_name outliers_sd3_extra if outliers_sd3_extra==1
-	*It's 36
-	
-	* Create a variable that sums number of outliers by Sheds
-	bys shed_name: egen outliers_extra_shed = sum(outliers_sd3_extra)
-	I
-	* Graph top 10 Sheds by number of outliers
-	preserve
-	keep if outliers_extra_shed>35
-
-	graph hbar outliers_extra_shed if outliers_extra_shed > 35, ///
-				over(shed_name, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(900)) ///
-				title("Top 10 sheds with most outliers in extra taxes & duties") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.1) ///
-				nofill
-				
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_extra.pdf", replace
-				
-	restore
-	
-//----
-	* TOTAL FOR FIRST THREE CATEGORIES
-	
-	* Determine lowest number of outliers for top 10 Sheds
-	ta shed_name outliers_sd3_total if outliers_sd3_total==1
-	*It's 9
-	
-	* Create a variable that sums number of outliers by Sheds
-	bys shed_name: egen outliers_total_shed = sum(outliers_sd3_total)
-
-	* Graph top 10 Sheds by number of outliers
-	preserve
-	keep if outliers_total_shed>8
-
-	graph hbar outliers_total_shed if outliers_total_shed > 8, ///
-				over(shed_name, sort(1) descending) ///
-				ytitle("") ///
-				title("Top 10 sheds with most outliers in total for first 3 categories") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.6) ///
-				nofill	
-				
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_total.pdf", replace
-	
-	restore
-	
-//----				
-	* DECLARED CUSTOMS DUTIES & LEVIES
-	
-	* Determine lowest number of outliers for top 10 Sheds
-	ta shed_name outliers_sd3_dcust if outliers_sd3_dcust==1
-	*It's 26
-	
-	* Create a variable that sums number of outliers by Sheds
-	bys shed_name: egen outliers_dcust_shed = sum(outliers_sd3_dcust)
-	
-	* Graph top 10 Sheds by number of outliers
-	preserve
-	keep if outliers_dcust_shed>25
-
-	graph hbar outliers_dcust_shed if outliers_dcust_shed > 25, ///
-				over(shed_name, sort(1) descending) ///
-				ytitle("") ///
 				yscale(range(1100)) ///
-				title("Top 10 sheds with most outliers for declared custom duties & levies") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(8.6) ///
-				nofill	
-
-	graph export "$intermediate_results/Graphs/outliers_3sd_shed_dcust.pdf", replace
-	
-	restore
-	
-//----				
-	* DECLARED TAXES
-	
-	* Determine lowest number of outliers for top 10 Sheds
-	ta shed_name outliers_sd3_dtaxes if outliers_sd3_dtaxes==1
-	*It's 12
-	
-	* Create a variable that sums number of outliers by Sheds
-	bys shed_name: egen outliers_dtaxes_shed = sum(outliers_sd3_dtaxes)
-
-	* Graph top 10 Sheds by number of outliers
-	preserve
-	keep if outliers_dtaxes_shed>11
-
-	graph hbar outliers_dtaxes_shed if outliers_dtaxes_shed > 11, ///
-				over(shed_name, sort(1) descending) ///
 				ytitle("") ///
-				title("Top 10 sheds with most outliers for declared taxes") ///
+				title("Top 10 sheds with most outliers in `"`: var label'"' ") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.1) ///
-				nofill		
-
-	graph export "$intermediate_results/Graphs/outliers_3sd_shed_dtaxes.pdf", replace
-	
-	restore
-	
-//----
-	* DECLARED EXTRA TAXES & DUTIES
-	
-	* Determine lowest number of outliers for top 10 Sheds
-	ta shed_name outliers_sd3_dextra if outliers_sd3_dextra==1
-	*It's 38
-	
-	* Create a variable that sums number of outliers by Sheds
-	bys shed_name: egen outliers_dextra_shed = sum(outliers_sd3_dextra)
-
-	* Graph top 10 Sheds by number of outliers
-	preserve
-	keep if outliers_dextra_shed>37
-	
-	graph hbar outliers_dextra_shed if outliers_dextra_shed > 37, ///
-				over(shed_name, sort(1) descending) ///
-				ytitle("") ///
-				title("Top 10 sheds with most outliers in declared extra taxes & duties") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.8) ///
+				xsize(7.3) ///
 				nofill
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_dextra.pdf", replace
-				
+	
+	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_shed.pdf", replace
+	
 	restore
 	
-//----
-	* TOTAL FOR DECLARED CATEGORIES
-	
-	* Determine lowest number of outliers for top 10 Sheds
-	ta shed_name outliers_sd3_dtotal if outliers_sd3_dtotal==1
-	*It's 10
-	
-	* Create a variable that sums number of outliers by Sheds
-	bys shed_name: egen outliers_dtotal_shed = sum(outliers_sd3_dtotal)
-	
-	* Graph top 10 Sheds by number of outliers
-	preserve
-	keep if outliers_dtotal_shed>9
-
-	graph hbar outliers_dtotal_shed if outliers_dtotal_shed > 9, ///
-				over(shed_name, sort(1) descending) ///
-				ytitle("") ///
-				title("Top 10 sheds with most outliers in total for declared categories") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
- 				xsize(7.8) ///				
-				nofill		
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_shed_dtotal.pdf", replace
-
-	restore
 
 				*------------- Bar plot by country -------------*
 
 //----
-	* CUSTOMS DUTIES & LEVIES
-	
-	* Determine lowest number of outliers for top 10 countries
-	ta co outliers_sd3_cust if outliers_sd3_cust==1
-	*It's 60
-	
-	* Create a variable that sums number of outliers by Country
-	bys co: egen outliers_cust_co = sum(outliers_sd3_cust)
-	
-	* Graph top 10 countries by number of outliers
+
+	* Create a variable that sums number of outliers by co
 	preserve
-	keep if outliers_cust_co > 59
-	
-	graph hbar outliers_cust_co if outliers_cust_co > 59, ///
+	collapse (sum) dev* (count) o_*, by(co) 
+
+	* Graph top 10 Sheds by number of outliers
+		foreach var in category_taxes {
+		keep if o_`var'==1
+		gsort -o_`var'
+		graph hbar o_`var' in 1/10,  ///
 				over(co, sort(1) descending) ///
-				yscale(range(1200)) ///
+				yscale(range(1100)) ///
 				ytitle("") ///
-				title("Top 10 countries with most outliers in customs & levies") ///
+				title("Top 10 countries with most outliers in `"`: var label'"' ") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6) ///
-				nofill
-
-	graph export "$intermediate_results/Graphs/outliers_3sd_co_cust.pdf", replace
-
-	restore
-
-//----
-	* TAXES
-	
-	* Determine lowest number of outliers for top 10 Country
-	ta co outliers_sd3_taxes if outliers_sd3_taxes==1
-	*It's 37
-	
-	* Create a variable that sums number of outliers by Country
-	bys co: egen outliers_taxes_co = sum(outliers_sd3_taxes)
-	
-	* Graph top 10 Country by number of outliers
-	preserve
-	keep if outliers_taxes_co > 36
-
-	graph hbar outliers_taxes_co if outliers_taxes_co > 36, ///
-				over(co, sort(1) descending) ///
-				yscale(range(260)) ///
-				ytitle("") ///
-				title("Top 10 countries with most outliers in taxes") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				nofill
-
-	graph export "$intermediate_results/Graphs/outliers_3sd_co_taxes.pdf", replace
-							
-	restore
-	
-//----
-	* EXTRA TAXES & DUTIES
-	
-	* Determine lowest number of outliers for top 10 Country
-	ta co outliers_sd3_extra if outliers_sd3_extra==1
-	*It's 60
-	
-	* Create a variable that sums number of outliers by Country
-	bys co: egen outliers_extra_co = sum(outliers_sd3_extra)
-	
-	* Graph top 10 Country by number of outliers
-	preserve
-	keep if outliers_extra_co > 59
-	
-	graph hbar outliers_extra_co if outliers_extra_co > 59, ///
-				over(co, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(1150)) ///
-				title("Top 10 countries with most outliers in extra taxes & duties") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.3) ///
-				nofill
-
-	graph export "$intermediate_results/Graphs/outliers_3sd_co_extra.pdf", replace
-							
-	restore
-
-//----
-	* TOTAL FOR FIRST THREE CATEGORIES
-	
-	* Determine lowest number of outliers for top 10 Country
-	ta co outliers_sd3_total if outliers_sd3_total==1
-	*It's 37
-	
-	* Create a variable that sums number of outliers by Country
-	bys co: egen outliers_total_co = sum(outliers_sd3_total)
-	
-	* Graph top 10 Country by number of outliers
-	preserve
-	keep if outliers_total_co > 14
-	graph hbar outliers_total_co if outliers_total_co > 36, ///
-				over(co, sort(1) descending) ///
-				ytitle("") ///
-				title("Top 10 countries with most outliers in total for first 3 categories") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.6) ///
-				nofill	
-	
-	graph export "$intermediate_results/Graphs/outliers_3sd_co_total.pdf", replace
-	
-	restore
-	
-//----				
-	* DECLARED CUSTOMS DUTIES & LEVIES
-	
-	* Determine lowest number of outliers for top 10 Country
-	ta co outliers_sd3_dcust if outliers_sd3_dcust==1
-	*It's 60
-	
-	* Create a variable that sums number of outliers by Country
-	bys co: egen outliers_dcust_co = sum(outliers_sd3_dcust)
-	
-	* Graph top 10 Country by number of outliers
-	preserve
-	keep if outliers_dcust_co > 59
-	graph hbar outliers_dcust_co if outliers_dcust_co > 59, ///
-				over(co, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(1200)) ///
-				title("Top 10 countries with most outliers in total for declared custom duties & levies") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(8.1) ///
-				nofill	
-
-	graph export "$intermediate_results/Graphs/outliers_3sd_co_dcust.pdf", replace
-
-	restore
-				
-//----				
-	* DECLARED TAXES
-	
-	* Determine lowest number of outliers for top 10 Country
-	ta co outliers_sd3_dtaxes if outliers_sd3_dtaxes==1
-	*It's 15
-	
-	* Create a variable that sums number of outliers by Country
-	bys co: egen outliers_dtaxes_co = sum(outliers_sd3_dtaxes)
-	
-	* Graph top 10 Country by number of outliers
-	preserve
-	keep if outliers_dtaxes_co > 14
-	
-	graph hbar outliers_dtaxes_co if outliers_dtaxes_co > 14, ///
-				over(co, sort(1) descending) ///
-				yscale(rang(260)) ///
-				ytitle("") ///
-				title("Top 10 countries with most outliers in total for declared taxes") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.6) ///
-				nofill		
-
-	graph export "$intermediate_results/Graphs/outliers_3sd_co_dtaxes.pdf", replace
-				
-	restore
-	
-//----
-	* DECLARED EXTRA TAXES & DUTIES
-	
-	* Determine lowest number of outliers for top 10 Country
-	ta co outliers_sd3_dextra if outliers_sd3_dextra==1
-	*It's 60
-	
-	* Create a variable that sums number of outliers by Country
-	bys co: egen outliers_dextra_co = sum(outliers_sd3_dextra)
-	
-	* Graph top 10 Country by number of outliers
-	preserve
-	keep if outliers_dextra_co > 59
-	
-	graph hbar outliers_dextra_co if outliers_dextra_co > 59, ///
-				over(co, sort(1) descending) ///
-				yscale(range(1200)) ///
-				ytitle("") ///
-				title("Top 10 countries with most outliers in declared extra taxes & duties") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.5) ///
+				xsize(7.3) ///
 				nofill
 	
-	graph export "$intermediate_results/Graphs/outliers_3sd_co_dextra.pdf", replace
-	
-	restore
-
-//----
-	* TOTAL FOR DECLARED CATEGORIES
-	
-	* Determine lowest number of outliers for top 10 Country
-	ta co outliers_sd3_dtotal if outliers_sd3_dtotal==1
-	*It's 15
-	
-	* Create a variable that sums number of outliers by Country
-	bys co: egen outliers_dtotal_co = sum(outliers_sd3_dtotal)
-	
-	* Graph top 10 Country by number of outliers
-	preserve
-	keep if outliers_dtotal_co > 14
-	
-	graph hbar outliers_dtotal_co if outliers_dtotal_co > 14, ///
+	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_co.pdf", replace
+		gsort -dev
+		graph hbar dev in 1/10,  ///
 				over(co, sort(1) descending) ///
+				yscale(range(1100)) ///
 				ytitle("") ///
-				title("Top 10 countries with most outliers in total for declared categories") ///
+				title("Top 10 sheds with most outliers in `"`: var label'"'") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.9) ///
-				nofill	
+				xsize(7.3) ///
+				nofill
 	
-	graph export "$intermediate_results/Graphs/outliers_3sd_co_dtotal.pdf", replace
+	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_co.pdf", replace
 	
 	restore
 	
 					*------------- Bar plot by HS2 -------------*							
 
 //----
-	* CUSTOMS DUTIES & LEVIES
-	
-	* Determine the top 10 HS2 Codes with the highest number of outliers
-	ta hs2 outliers_sd3_cust if outliers_sd3_cust==1
-	*It's 67
-	
-	* Create a variable that sums number of outliers by HS2 Codes
-	bys hs2: egen outliers_cust_hs2 = sum(outliers_sd3_cust)
-
-	* Graph top 10 countries by number of outliers
+	** Create a variable that sums number of outliers by co
 	preserve
-	keep if outliers_cust_hs2>66
+	collapse (sum) dev* (count) o_*, by(hs2) 
 
-	graph hbar outliers_cust_hs2 if outliers_cust_hs2 > 66, ///
+	* Graph top 10 Sheds by number of outliers
+		foreach var in category_taxes {
+		keep if o_`var'==1
+		gsort -o_`var'
+		graph hbar o_`var' in 1/10,  ///
 				over(hs2, sort(1) descending) ///
+				yscale(range(1100)) ///
 				ytitle("") ///
-				title("Top 10 HS2 codes with most outliers in customs & levies") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				nofill
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_cust.pdf", replace
-	
-	restore
-	
-//----
-	* TAXES
-	
-	* Determine lowest number of outliers for top 10 HS2 Codes
-	ta hs2 outliers_sd3_taxes if outliers_sd3_taxes==1
-	*It's 18
-	
-	* Create a variable that sums number of outliers by HS2 Codes
-	bys hs2: egen outliers_taxes_hs2 = sum(outliers_sd3_taxes)
-	
-	* Graph top 10 HS2 Codes by number of outliers
-	preserve
-	keep if outliers_taxes_hs2>17
-	
-	graph hbar outliers_taxes_hs2 if outliers_taxes_hs2 > 17, ///
-				over(hs2, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(210)) ///
-				title("Top 10 HS2 codes with most outliers in taxes") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				nofill
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_taxes.pdf", replace
-		
-	restore
-	
-//----
-	* EXTRA TAXES & DUTIES
-	
-	* Determine lowest number of outliers for top 10 HS2 Codes
-	ta hs2 outliers_sd3_extra if outliers_sd3_extra==1
-	*It's 63
-	
-	* Create a variable that sums number of outliers by HS2 Codes
-	bys hs2: egen outliers_extra_hs2 = sum(outliers_sd3_extra)
-
-	* Graph top 10 HS2 Codes by number of outliers
-	preserve
-	keep if outliers_extra_hs2>62
-	
-	graph hbar outliers_extra_hs2 if outliers_extra_hs2 > 62, ///
-				over(hs2, sort(1) descending) ///
-				ytitle("") ///
-				title("Top 10 HS2 codes with most outliers in extra taxes & duties") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				nofill
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_extra.pdf", replace
-				
-	restore
-	
-//----
-	* TOTAL FOR FIRST THREE CATEGORIES
-	
-	* Determine lowest number of outliers for top 10 HS2 Codes
-	ta hs2 outliers_sd3_total if outliers_sd3_total==1
-	*It's 9
-	
-	* Create a variable that sums number of outliers by HS2 Codes
-	bys hs2: egen outliers_total_hs2 = sum(outliers_sd3_total)
-
-	preserve
-	keep if outliers_total_hs2>8
-	
-	* Graph top 10 HS2 Codes by number of outliers
-	graph hbar outliers_total_hs2 if outliers_total_hs2 > 8, ///
-				over(hs2, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(210)) ///
-				title("Top 10 HS2 codes with most outliers in total for first 3 categories") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.3) ///
-				nofill	
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_total.pdf", replace
-				
-	restore
-	
-//----				
-	* DECLARED CUSTOMS DUTIES & LEVIES
-	
-	* Determine lowest number of outliers for top 10 HS2 Codes
-	ta hs2 outliers_sd3_dcust if outliers_sd3_dcust==1
-	*It's 67
-	
-	* Create a variable that sums number of outliers by HS2 Codes
-	bys hs2: egen outliers_dcust_hs2 = sum(outliers_sd3_dcust)
-
-	* Graph top 10 HS2 Codes by number of outliers
-	preserve
-	keep if outliers_dcust_hs2>66
-
-	graph hbar outliers_dcust_hs2 if outliers_dcust_hs2 > 66, ///
-				over(hs2, sort(1) descending) ///
-				ytitle("") ///
-				title("Top 10 HS2 codes with most outliers in total for declared custom duties & levies") ///
+				title("Top 10 countries with most outliers in `"`: var label'"' ") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				xsize(7.3) ///
-				nofill	
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_dcust.pdf", replace
-				
-	restore
-	
-//----				
-	* DECLARED TAXES
-	
-	* Determine lowest number of outliers for top 10 HS2 Codes
-	ta hs2 outliers_sd3_dtaxes if outliers_sd3_dtaxes==1
-	*It's 18
-	
-	* Create a variable that sums number of outliers by HS2 Codes
-	bys hs2: egen outliers_dtaxes_hs2 = sum(outliers_sd3_dtaxes)
-
-	* Graph top 10 HS2 Codes by number of outliers
-	preserve
-	keep if outliers_dtaxes_hs2>17
-	
-	graph hbar outliers_dtaxes_hs2 if outliers_dtaxes_hs2 > 17, ///
-				over(hs2, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Top 10 HS2 codes with most outliers in total for declared taxes") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.5) ///
-				nofill		
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_dtaxes.pdf", replace
-				
-	restore
-	
-//----
-	* DECLARED EXTRA TAXES & DUTIES
-	
-	* Determine lowest number of outliers for top 10 HS2 Codes
-	ta hs2 outliers_sd3_dextra if outliers_sd3_dextra==1
-	*It's 67
-	
-	* Create a variable that sums number of outliers by HS2 Codes
-	bys hs2: egen outliers_dextra_hs2 = sum(outliers_sd3_dextra)
-	
-	* Graph top 10 HS2 Codes by number of outliers
-	preserve
-	keep if outliers_dextra_hs2>66
-	
-	graph hbar outliers_dextra_hs2 if outliers_dextra_hs2 > 66, ///
-				over(hs2, sort(1) descending) ///
-				ytitle("") ///
-				title("Top 10 HS2 codes with most outliers in declared extra taxes & duties") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.5) ///
 				nofill
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_dextra.pdf", replace
-				
-	restore
 	
-//----
-	* TOTAL FOR DECLARED CATEGORIES
-	
-	* Determine lowest number of outliers for top 10 HS2 Codes
-	ta hs2 outliers_sd3_dtotal if outliers_sd3_dtotal==1
-	*It's 9
-	
-	* Create a variable that sums number of outliers by HS2 Codes
-	bys hs2: egen outliers_dtotal_hs2 = sum(outliers_sd3_dtotal)
-	
-	* Graph top 10 HS2 Codes by number of outliers
-	preserve
-	keep if outliers_dtotal_hs2>8
-	
-	graph hbar outliers_dtotal_hs2 if outliers_dtotal_hs2 > 8, ///
+	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_hs2.pdf", replace
+		gsort -dev
+		graph hbar dev in 1/10,  ///
 				over(hs2, sort(1) descending) ///
+				yscale(range(1100)) ///
 				ytitle("") ///
-				yscale(range(205)) ///
-				title("Top 10 HS2 codes with most outliers in total for declared categories") ///
+				title("Top 10 hs2 with most deviations in `"`: var label'"'") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.3) ///
-				nofill	
-
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2_dtotal.pdf", replace
-
-	restore
+				xsize(7.3) ///
+				nofill
 	
+	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_hs2.pdf", replace
+	
+	restore
  		 *------------- Bar plots by HS2 codes with biggest trade gaps -------------*							
   
 //----
@@ -1648,7 +1006,8 @@
 	egen overall_total=rowtotal(total_taxes decl_total)
 	eststo clear	
 
-	regress  overall_total i.hs2 i.shed_code i.co_code logimpUSD logqua i.year i.month i.currency_code i.channel_code 
+	areg devtotal_tax logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb(i.co_code i.yearmonth) vce(cluster shed_code)
+	 eststo m1
 	 
 	esttab 	using "$intermediate_results/Tables/reg2.tex", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)	
