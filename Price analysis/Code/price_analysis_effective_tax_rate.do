@@ -30,10 +30,30 @@
 	
 	version 12.1
 	
+/*
 	*Installation of a package to export tables as docx files
 	*ssc install asdoc
 	*ssc install estout
   
+	* Install ftools (remove program if it existed previously)
+	cap ado uninstall ftools
+	net install ftools, from("https://raw.githubusercontent.com/sergiocorreia/ftools/master/src/")
+
+	* Install reghdfe 5.x
+	cap ado uninstall reghdfe
+	net install reghdfe, from("https://raw.githubusercontent.com/sergiocorreia/reghdfe/master/src/")
+
+	* Install boottest for Stata 11 and 12 only
+	if (c(version)<13) cap ado uninstall boottest
+	if (c(version)<13) ssc install boottest
+
+	* Install moremata (sometimes used by ftools but not needed for reghdfe)
+	cap ssc install moremata
+
+	ftools, compile
+	reghdfe, compile
+*/
+
 	dis "`c(username)'" // The text that shows up is the username of your computer (say XXX), and insert that into the code below
 
 	*change to working directory
@@ -75,7 +95,7 @@
 	use "$intermediate_data/Price_data_2907.dta", clear 
 
 * ---------------------------------------------------------------------------- *
-* Cleaning of country, quantity codes, and shed variables
+* Data Cleaning
 * ---------------------------------------------------------------------------- *
 
 	replace co="European Union" if co=="Austria" | ///
@@ -207,6 +227,7 @@
 	replace QT_code="Number of items" if quantity_unit_code=="no"
 
 	* KC's additions:
+	label variable shed_name "Shed name"
 	replace shed_name="South Asia Pakistan Terminals" ///
 				if shed_name=="SOUTH ASIA PAKISTAN TERMINALS"
 	replace shed_name="Peshawar Torkham" if shed_name=="PESHAWAR TORKHAM"
@@ -224,11 +245,54 @@
 				 hs2 == 88 | ///
 				 hs2 == 90 | ///
 				 hs2 == 30
-	*generate hs6 code:
+         
+	* Generate hs6 code:
 	gen hs6=int(hs_code*100)
+	label variable hs6 "HS6 code"
 	
 	*generate yearmonth
 	gen yearmonth=ym(year,month)
+		
+	* Manually labelling yearmonth because the following formatting command is 
+	* not sufficient to make dates appear in graphs: "format yearmonth %tmMonth,_CCYY"
+	label variable yearmonth "Month-Year"
+	label define yearmonth_label 684 "January, 2017" ///
+									685	"February, 2017" ///
+									686	"March, 2017" ///
+									687	"April, 2017" ///
+									688	"May, 2017" ///
+									689	"June, 2017" ///
+									690	"July, 2017" ///
+									691	"August, 2017" ///
+									692	"September, 2017" ///
+									693	"October, 2017" ///
+									694	"November, 2017" ///
+									695	"December, 2017" ///
+									696	"January, 2018" ///
+									697	"February, 2018" ///
+									698	"March, 2018" ///
+									699	"April, 2018" ///
+									700	"May, 2018" ///
+									701	"June, 2018"
+									
+	label values yearmonth yearmonth_label
+	
+	* Label the variables year and month (probably useless now)
+	label variable year "Year"
+	label variable month "Month"
+	label define month_names 1 "Jan" 2 "Feb" 3 "Mar" 4 "Apr" 5 "May" 6 "Jun" ///
+							 7 "Jul" 8 "Aug" 9 "Sep" 10 "Oct" 11 "Nov" 12 "Dec"
+	label values month month_names
+	
+	* Setting font for graphs to Times New Roman
+	graph set window fontface "Times New Roman"
+	
+	* Generate new variable for sheds for the frequency distribution tables
+	encode shed_name, gen(shed_name_temp)
+
+	* Generate frequency distribution tables for yearmonth, shed_name, and hs2
+	asdoc tab1 yearmonth shed_name_temp hs2, replace label
+	
 * ---------------------------------------------------------------------------- *
 * Trial on CI, to be applied on correct unit_price.
 * ---------------------------------------------------------------------------- *
@@ -287,8 +351,8 @@
 	
 	* Determine the % of outliers
 	ta outliers_3sd
-	* In this case we have 1.07% outliers
-
+	* In this case we have 1.27% outliers
+	
 	save "$intermediate_data/Price_data_2907_outliers.dta", replace 
 
 **************************************************************************
@@ -299,15 +363,6 @@
 
 	
 				*------------- BAR PLOTS BY MONTH -------------*
-
-	* Label the variables year and month
-	label variable year "Year"
-	label variable month "Month"
-	label define month_names 1 "Jan" 2 "Feb" 3 "Mar" 4 "Apr" 5 "May" 6 "Jun" ///
-							 7 "Jul" 8 "Aug" 9 "Sep" 10 "Oct" 11 "Nov" 12 "Dec"
-	label values month month_names
-	
-	
 		
 //----
 	* NUMBER OF OUTLIERS per HS code using 3SD, by month
@@ -360,7 +415,7 @@
 
 		
 	* Graph top 10 Sheds by number of outliers
-	graph hbar outliers_3sd_shed in 1/l0 , ///
+	graph hbar outliers_3sd_shed in 1/10 , ///
 				over(shed_name, sort(1) descending) ///
 				yscale(range(21000)) ///
 				ylabel(, format(%9.0fc)) ///
@@ -369,9 +424,10 @@
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
 	graph export "$intermediate_results/Graphs/Price_outliers_3sd_shed.pdf", replace
-	gsort - abs_dev
+	
+  gsort - abs_dev
 	* Graph top 10 Sheds by sum of deviation 
-	graph hbar abs_dev in 1/l0, ///
+	graph hbar abs_dev in 1/10, ///
 				over(shed_name, sort(1) descending) ///
 				yscale(range(21000)) ///
 				ylabel(, format(%9.0fc)) ///
@@ -411,7 +467,7 @@
 				ytitle("") ///
 				title("Top 10 countries with biggest sums of outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
-	
+        
 	graph export "$intermediate_results/Graphs/Price_absdev_co.pdf", replace
 	restore
 
@@ -500,7 +556,6 @@
 	ftools, compile
 	
 	eststo clear	
-
 	
 	* @ Aram- I am changing this to make more readable tables 
 	*Aram skipping the first reg if it crashes your computer
@@ -526,9 +581,9 @@
 	
 	esttab 	m2 m3 using "$intermediate_results/Tables/Determinants_of_PirceDeviation.rtf", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
-	
-	* If we really want to include hs_code, not only we need to have it as an 
-	* integrer but also to increase the matrix size (default is 800). Do we really need this?
+
+	esttab m1 m2 using "$intermediate_results/Tables/Determinants_of_PirceDeviation.rtf", label r2 ar2 ///
+	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
 
 	save "$intermediate_data/Price_data_2907_regression.dta", replace
 
@@ -537,51 +592,79 @@
 * ---------------------------------------------------------------------------- *
 * 			Simulation on taxes to determine currency and discrepancies
 * ---------------------------------------------------------------------------- *
-
+	
 	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
+	
+	* Drop HS6 code for which number of observations are under 30
+	bys hs6: drop if _N<30
+	
+	* Drop yearmonth for which number of observations are under 30
+	bys yearmonth: drop if _N<30
 
-	* Create the three categories required:
+	
+	* Merge the data set containing the exchange rate variable
+	merge m:1 year month using "$initial_data/Exchange_rate.dta", gen(_Merge_Tax)
+	drop if _merge!=3
+	
+	
+//----
+	* Create the three categories required as a percent of original price
 
 	* Custom Duty
-
-	egen cust_duty_levies=rowtotal(customsduty federalexciseduty petrloeumlevy)
-
+	egen cust_duty_levies_temp=rowtotal(customsduty federalexciseduty petrloeumlevy)
+	gen cust_duty_levies = ((cust_duty_levies_temp/USDollar)/imports_USD)*100
+	
 	* Taxes
-
-	egen taxes=rowtotal(salestax incometax salestaxleviedascedinvatmode salestaxonlocalsupplies)
+	egen taxes_temp=rowtotal(salestax incometax salestaxleviedascedinvatmode salestaxonlocalsupplies)
+	gen taxes = ((taxes_temp/USDollar)/imports_USD)*100
 
 	* Extra taxes
-
-	egen extra_taxes=rowtotal(incometaxsurcharge additionalcustomduty gensaletax regduty antidumping addsaletax edibleoilcess frf warehousesurcharge iqra specialfed developmentsurcharge surcharge vrdamount overstayedgoodssurcharge servicecharge guaranteeadditionalsalestax countervailingduty)
+	egen extra_taxes_temp=rowtotal(incometaxsurcharge additionalcustomduty gensaletax regduty antidumping addsaletax edibleoilcess frf warehousesurcharge iqra specialfed developmentsurcharge surcharge vrdamount overstayedgoodssurcharge servicecharge guaranteeadditionalsalestax countervailingduty)
+	gen extra_taxes = ((extra_taxes_temp/USDollar)/imports_USD)*100
 
 	* Generate total
+	egen total_taxes_temp=rowtotal(cust_duty_levies taxes extra_taxes)
+	gen total_taxes = ((total_taxes_temp/USDollar)/imports_USD)*100
 
-	egen total_taxes=rowtotal(cust_duty_levies taxes extra_taxes)
+	
+//----
+	* Create the three additional categories for declared
+
+	* Declared custom duties
+	egen decl_cust_temp=rowtotal(decalredcustomsduty decalredfederalexciseduty decalredpetrloeumlevy)
+	gen decl_cust = ((decl_cust_temp/USDollar)/imports_USD)*100
+
+	* Declared taxes
+	egen decl_taxes_temp=rowtotal(decalredsalestax decalredincometax decalredsalestaxleviedascedinvat decalredsalestaxonlocalsupplies)
+	gen decl_taxes = ((decl_taxes_temp/USDollar)/imports_USD)*100
+
+	* Declared extra taxes
+	egen decl_extra_taxes_temp=rowtotal(decalredincometaxsurcharge decalredadditionalcustomduty decalredgensaletax decalredregduty decalredantidumping decalredaddsaletax decalrededibleoilcess decalredfrf decalredwarehousesurcharge decalrediqra decalredspecialfed decalreddevelopmentsurcharge decalredsurcharge decalredvrdamount decalredoverstayedgoodssurcharge decalredservicecharge decalredguaranteeadditionalsales decalredcountervailingduty)
+	gen decl_extra_taxes = ((decl_extra_taxes_temp/USDollar)/imports_USD)*100
+
+	* Declared total
+	egen decl_total_temp = rowtotal(decl_cust decl_taxes decl_extra_taxes)
+	gen decl_total = ((decl_total_temp/USDollar)/imports_USD)*100
+
+//----	
+	
+	count if cust_duty_levies != taxes
+	count if cust_duty_levies != extra_taxes
+	count if cust_duty_levies != total_taxes
+	count if cust_duty_levies != decl_cust
+	count if cust_duty_levies != decl_taxes
+	count if cust_duty_levies != decl_extra_taxes
+	count if cust_duty_levies != decl_total
+
+//----	
 
 	* Determine if smaller than import to understand if currency is a problem
-
 	gen tax_curr_disc=0  
 	replace tax_curr_disc=1 if total_taxes<imports_USD
 
 	ta total_taxes if tax_curr_disc==1 
 
-	* Create the three additional categories for declared
-
-	* Declared custom duties
-
-	egen decl_cust=rowtotal(decalredcustomsduty decalredfederalexciseduty decalredpetrloeumlevy)
-
-	* Declared taxes
-	egen decl_taxes=rowtotal(decalredsalestax decalredincometax decalredsalestaxleviedascedinvat decalredsalestaxonlocalsupplies)
-
-	* Declared extra taxes
-	egen decl_extra_taxes=rowtotal(decalredincometaxsurcharge decalredadditionalcustomduty decalredgensaletax decalredregduty decalredantidumping decalredaddsaletax decalrededibleoilcess decalredfrf decalredwarehousesurcharge decalrediqra decalredspecialfed decalreddevelopmentsurcharge decalredsurcharge decalredvrdamount decalredoverstayedgoodssurcharge decalredservicecharge decalredguaranteeadditionalsales decalredcountervailingduty)
-
-	* Declared total
-	egen decl_total=rowtotal(decl_cust decl_taxes decl_extra_taxes)
-
 	* Deviation from import USD value
-
 	gen tax_curr_disc_dec=0  
 	replace tax_curr_disc_dec=1 if decl_total<imports_USD
 
@@ -589,47 +672,45 @@
 	ta tax_curr_disc_dec
 	ta decl_total if tax_curr_disc_dec==1&decl_total==0
 	su decl_total if tax_curr_disc_dec==1&decl_total>0
-
 	* We have a larger number of discrepancies with higher variations as well (now
 	* 95% of the discrepancies = 0 , around 10,000 observations)
-
-	* Total as percentage of original price 
-
-	* For this we need to merge the data set containing the exchange rate variable
-
-	merge m:1 year month using "$initial_data/Exchange_rate.dta", gen(_Merge_Tax)
-
-	drop if _merge!=3
-
-	gen tax_USD=total_taxes/USDollar
-
-	gen dec_tax_USD=decl_total/USDollar
-
-	* Total taxes: !!!! The other categories needs to be expressed in % as well!
-
-	gen per_tax_price=(tax_USD/imports_USD)*100
-
-	gen dec_per_tax_price=(dec_tax_USD/imports_USD)*100
 	
-	local category_taxes cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total
-	foreach var in category_taxes {
+//----
+	* Loop to create outlier variables for each of the categories
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var in `category_taxes' {
 		* Create means, SD by HS code
 		bys hs6 yearmonth: egen av_`var'= mean(`var')
 		bys hs6 yearmonth: egen sd_`var' = sd(`var')
-		gen dev`var'=`var'-av`var'
+		gen dev`var'=`var'-av_`var'
 		
 		* Create Lower bound for CI by HS code using 3SD
 		bys hs6 yearmonth: gen sd3LB_`var'= av_`var' - (3 * sd_`var')
 	
-		* Create Upper bound for CI by HS code using 3SD
+		* Create Upper bound for CI by HS code using 3SD. NOT NEEDED AT THE MOMENT
 		bys hs6 yearmonth: gen sd3UB_`var'= av_`var' + (3 * sd_`var')
 	
 		* Create variable for outliers using 3SD
 		gen o_`var'=1
 
 		* Remove from outliers the values within 3SD
-		replace o_`var'=0 if sd3LB_`var'<cust_duty_levies<sd3UB_`var'
+		replace o_`var'=0 if `var' > sd3LB_`var'
+		
+		* Generate sum of absolute deviations from mean
+		bys hs_code: gen per_dev_`var'=(`var' - av_`var')/av_`var'
+		bys year month: egen dev_`var' = sum(abs(per_dev_`var'))
 	}
+
+	count if o_cust_duty_levies != o_taxes
+	count if o_cust_duty_levies != o_extra_taxes
+	count if o_cust_duty_levies != o_total_taxes
+	count if o_cust_duty_levies != o_decl_cust
+	count if o_cust_duty_levies != o_decl_taxes
+	count if o_cust_duty_levies != o_decl_extra_taxes
+	count if o_cust_duty_levies != o_decl_total	
+	
+//----
+	* Variable and value labels for outlier variables
 	label variable o_cust_duty_levies "Outliers in custom duties & levies"
 	label variable o_taxes "Outliers in taxes"
 	label variable o_extra_taxes "Outliers in extra taxes"
@@ -650,6 +731,26 @@
 	
 	label values o_cust_duty_levies outliers_cust
 	label values o_taxes outliers_taxes
+	label values o_extra_taxes outliers_extra
+	label values o_total_taxes outliers_total
+	label values o_decl_cust outliers_dcust
+	label values o_decl_taxes outliers_dtaxes
+	label values o_decl_extra_taxes outliers_dextra
+	label values o_decl_total outliers_dtotal
+
+//----	
+	* Determine the % of outliers (3SD): @Kaustubh: by this definition of outliers, and if the data were normally distributed, 
+	*we should have around 0.1 to 0.5 % outliers max
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var in `category_taxes' {
+	 ta o_`var'
+	}
+
+	
+	save "$intermediate_data/Price_data_2907_taxes.dta", replace
+	
+	
+=======
 	label values o_extra outliers_extra
 	label values o_total outliers_total
 	label values o_dcust outliers_dcust
@@ -689,81 +790,86 @@
 				outliers_sd3_dextra outliers_sd3_dtotal, replace label
 	
 	save "$intermediate_data/Price_data_2907_taxes.dta", replace
-	collapse (sum) dev* (count) o_*, by(hs6 shed_code yearmonth co) 
+
 				*------------- BAR PLOTS BY MONTH -------------*
 //----
 				
 	* Create graph of # of outliers per HS code using 3SD, by MONTH & YEAR
 	
 	use "$intermediate_data/Price_data_2907_taxes.dta", clear
+	
+	collapse (sum) dev* (count) o_*, by(hs6 shed_name yearmonth co) 
 
 	preserve
 	
-	foreach var in category_taxes {
+	
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var in `category_taxes' {
 	keep if o_`var'==1
-	graph hbar (count) o_`var', over(monthyear) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("Number of outliers per HS code for `"`: var label'"' ") ///
+	graph hbar (sum) o_`var', over(yearmonth) ///
+				title("Number of outliers per HS code for "`var') ///
 				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
+				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(21000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
+				
 	
 	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_month.pdf", replace
 
-graph hbar (sum) dev`var', over(monthyear) ///
-				ytitle("") ///
-				ylabel(, format(%9.0fc)) ///
-				by(year, title("sum of deviations per HS code for `"`: var label'"' ") ///
+	graph hbar (sum) dev_`var', over(yearmonth) ///
+				title("Sum of deviations per HS code for "`var') ///
 				subtitle("by month and year") ///
-				note("Note: There are no observations for July-December 2018.")) ///
-				blabel(bar, position(outside) format(%9.0fc) color(black))
+				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(8600000000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
 	
-	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_month.pdf", replace
-
-	restore
+	graph 	export "$intermediate_results/Graphs/Taxes_dev_`var'_month.pdf", replace
 	}
+	restore
+	
 //----	
 
 	
 					*------------- Bar plot by shed -------------*
 	
-	* CUSTOMS DUTIES & LEVIES
+	use "$intermediate_data/Price_data_2907_taxes.dta", clear
 	
-	* Determine lowest number of outliers for top 10 Sheds
-	ta shed_name outliers_sd3_cust if outliers_sd3_cust==1
-	*It's 26
-
-	* Create a variable that sums number of outliers by Sheds
 	preserve
-	collapse (sum) dev* (count) o_*, by(shed_code) 
+	collapse (sum) dev* (count) o_*, by(shed_name) 
 
 	* Graph top 10 Sheds by number of outliers
-		foreach var in category_taxes {
-		keep if o_`var'==1
-		gsort -o_`var'
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var in `category_taxes' {
+		gsort - o_`var'
 		graph hbar o_`var' in 1/10,  ///
 				over(shed_name, sort(1) descending) ///
-				yscale(range(1100)) ///
-				ytitle("") ///
-				title("Top 10 sheds with most outliers in `"`: var label'"' ") ///
+				title("Top 10 sheds with most outliers in "`var label') ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.3) ///
+				ytitle("") ///
+				yscale(range(550000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color) ///
 				nofill
 	
-	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_shed.pdf", replace
-		gsort -dev
-		graph hbar dev in 1/10,  ///
-				over(shed_name, sort(1) descending) ///
-				yscale(range(1100)) ///
-				ytitle("") ///
-				title("Top 10 sheds with most outliers in `"`: var label'"' ") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.3) ///
-				nofill
-	
-	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_shed.pdf", replace
-	
+		graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_shed.pdf", replace
+			
+			gsort - dev_`var'
+			graph hbar dev_`var' in 1/10,  ///
+					over(shed_name, sort(1) descending) ///
+					title("Top 10 sheds with most outliers in "`var label') ///
+					blabel(bar, position(outside) format(%17.0fc) color(black)) ///
+					ytitle("") ///
+					yscale(range(202500000000) off) ///
+					ylabel(, nogrid) ///
+					scheme(s1color) ///
+					nofill
+		
+		graph 	export "$intermediate_results/Graphs/Taxes_dev_`var'_shed.pdf", replace
+	}
 	restore
 	
 
@@ -771,216 +877,124 @@ graph hbar (sum) dev`var', over(monthyear) ///
 
 //----
 
-	* Create a variable that sums number of outliers by co
+	use "$intermediate_data/Price_data_2907_taxes.dta", clear
+
 	preserve
+
 	collapse (sum) dev* (count) o_*, by(co) 
 
-	* Graph top 10 Sheds by number of outliers
-		foreach var in category_taxes {
-		keep if o_`var'==1
+	* Graph top 10 countries by number of outliers
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var in `category_taxes' {
 		gsort -o_`var'
 		graph hbar o_`var' in 1/10,  ///
 				over(co, sort(1) descending) ///
-				yscale(range(1100)) ///
-				ytitle("") ///
-				title("Top 10 countries with most outliers in `"`: var label'"' ") ///
+				title("Top 10 countries with most outliers in "`var label') ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.3) ///
+				ytitle("") ///
+				yscale(off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color) ///
 				nofill
 	
-	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_co.pdf", replace
-		gsort -dev
-		graph hbar dev in 1/10,  ///
+		graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_co.pdf", replace
+		
+		gsort -dev_`var'
+		graph hbar dev_`var' in 1/10,  ///
 				over(co, sort(1) descending) ///
-				yscale(range(1100)) ///
+				title("Top 10 countries with most outliers in "`var label') ///
+				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
 				ytitle("") ///
-				title("Top 10 sheds with most outliers in `"`: var label'"'") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.3) ///
+				yscale(range(480000000000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color) ///
 				nofill
 	
 	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_co.pdf", replace
 	
+	}
 	restore
 	
 					*------------- Bar plot by HS2 -------------*							
 
 //----
-	** Create a variable that sums number of outliers by co
+	use "$intermediate_data/Price_data_2907_taxes.dta", clear
+
 	preserve
 	collapse (sum) dev* (count) o_*, by(hs2) 
 
-	* Graph top 10 Sheds by number of outliers
-		foreach var in category_taxes {
-		keep if o_`var'==1
+	* Graph top 10 HS2 codes by number of outliers
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var in `category_taxes' {
 		gsort -o_`var'
 		graph hbar o_`var' in 1/10,  ///
 				over(hs2, sort(1) descending) ///
-				yscale(range(1100)) ///
-				ytitle("") ///
-				title("Top 10 countries with most outliers in `"`: var label'"' ") ///
+				title("Top 10 HS2 codes with most outliers in "`var label') ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.3) ///
+				ytitle("") ///
+				yscale(off) ///
+				ylabel(, nogrid) ///				
+				scheme(s1color) ///
 				nofill
 	
-	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_hs2.pdf", replace
-		gsort -dev
-		graph hbar dev in 1/10,  ///
+	graph export "$intermediate_results/Graphs/Taxes_o_`var'_hs2.pdf", replace
+		
+		gsort -dev_`var'
+		graph hbar dev_`var' in 1/10,  ///
 				over(hs2, sort(1) descending) ///
-				yscale(range(1100)) ///
+				title("Top 10 HS2 codes with most deviations in "`var label') ///
+				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
 				ytitle("") ///
-				title("Top 10 hs2 with most deviations in `"`: var label'"'") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.3) ///
+				yscale(range(174000000000) off) ///
+				ylabel(, nogrid) ///				
+				scheme(s1color) ///
 				nofill
 	
-	graph 	export "$intermediate_results/Graphs/Taxes_o_`var'_hs2.pdf", replace
+	graph export "$intermediate_results/Graphs/Taxes_dev_`var'_hs2.pdf", replace
+	}
 	
 	restore
+	
  		 *------------- Bar plots by HS2 codes with biggest trade gaps -------------*							
   
 //----
-	* CUSTOMS DUTIES & LEVIES
-	
-	* Create a variable that sums number of outliers by HS2_Gap Codes
-	bys hs2_gap: egen outliers_cust_hs2_gap = sum(outliers_sd3_cust)
-		
-	* Graph countries by number of outliers
-	graph hbar outliers_cust_hs2_gap, ///
-				over(hs2_gap, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Number of outliers among HS2 gap codes in customs & levies") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6) ///
-				nofill
-	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_cust.pdf", replace
+	use "$intermediate_data/Price_data_2907_taxes.dta", clear
+	drop sd_cust_duty_levies sd3LB_cust_duty_levies sd3UB_cust_duty_levies sd_taxes sd3LB_taxes sd3UB_taxes sd_extra_taxes sd3LB_extra_taxes sd3UB_extra_taxes sd_total_taxes sd3LB_total_taxes sd3UB_total_taxes sd_decl_cust sd3LB_decl_cust sd3UB_decl_cust sd_decl_taxes sd3LB_decl_taxes sd3UB_decl_taxes sd_decl_extra_taxes sd3LB_decl_extra_taxes sd3UB_decl_extra_taxes sd_decl_total sd3LB_decl_total sd3UB_decl_total cust_duty_levies_temp taxes_temp extra_taxes_temp total_taxes_temp decl_cust_temp decl_taxes_temp decl_extra_taxes_temp decl_total_temp av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes av_decl_cust av_decl_taxes av_decl_extra_taxes av_decl_total
 
-//----
-	* TAXES
-	
-	* Create a variable that sums number of outliers by HS2_Gap Codes
-	bys hs2_gap: egen outliers_taxes_hs2_gap = sum(outliers_sd3_taxes)
-		
-	* Graph countries by number of outliers
-	graph hbar outliers_taxes_hs2_gap, ///
-				over(hs2_gap, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Number of outliers among HS2 gap codes in taxes") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				nofill
-	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_taxes.pdf", replace
-				
-//----
-	* EXTRA TAXES & DUTIES
-	
-	* Create a variable that sums number of outliers by HS2_Gap Codes
-	bys hs2_gap: egen outliers_extra_hs2_gap = sum(outliers_sd3_extra)
-		
-	* Graph countries by number of outliers
-	graph hbar outliers_extra_hs2_gap, ///
-				over(hs2_gap, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Number of outliers among HS2 gap codes in extra taxes & duties") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.1) ///
-				nofill
-	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_extra.pdf", replace
-			
-//----
-	* TOTAL FOR FIRST THREE CATEGORIES
-	
-	* Create a variable that sums number of outliers by HS2_Gap Codes
-	bys hs2_gap: egen outliers_total_hs2_gap = sum(outliers_sd3_total)
-		
-	* Graph countries by number of outliers
-	graph hbar outliers_total_hs2_gap, ///
-				over(hs2_gap, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Number of outliers among HS2 gap codes in total for first three categories") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.8) ///
-				nofill
-	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_total.pdf", replace
-			
-//----				
-	* DECLARED CUSTOMS DUTIES & LEVIES
-	
-	* Create a variable that sums number of outliers by HS2_Gap Codes
-	bys hs2_gap: egen outliers_dcust_hs2_gap = sum(outliers_sd3_dcust)
-		
-	* Graph countries by number of outliers
-	graph hbar outliers_dcust_hs2_gap, ///
-				over(hs2_gap, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Number of outliers among HS2 gap codes in declared custom duties & levies") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(7.1) ///
-				nofill
-	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_dcust.pdf", replace
-	
-//----				
-	* DECLARED TAXES
-	
-	* Create a variable that sums number of outliers by HS2_Gap Codes
-	bys hs2_gap: egen outliers_dtaxes_hs2_gap = sum(outliers_sd3_dtaxes)
-		
-	* Graph countries by number of outliers
-	graph hbar outliers_dtaxes_hs2_gap, ///
-				over(hs2_gap, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Number of outliers among HS2 gap codes in declared taxes") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6) ///
-				nofill
-				
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_dtaxes.pdf", replace
-			
-//----
-	* DECLARED EXTRA TAXES & DUTIES
-	
-	* Create a variable that sums number of outliers by HS2_Gap Codes
-	bys hs2_gap: egen outliers_dextra_hs2_gap = sum(outliers_sd3_dextra)
-		
-	* Graph countries by number of outliers
-	graph hbar outliers_dextra_hs2_gap, ///
-				over(hs2_gap, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Number of outliers among HS2 gap codes in declared extra taxes & duties") ///
-				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(6.8) ///
-				nofill
-	
-	graph 	export "$intermediate_results/Graphs/outliers_3sd_hs2gap_dextra.pdf", replace
+	preserve
+	collapse (sum) dev* (count) o_*, by(hs2_gap) 
 
-//----
-	* TOTAL FOR DECLARED CATEGORIES
-	
-	* Create a variable that sums number of outliers by HS2_Gap Codes
-	bys hs2_gap: egen outliers_dtotal_hs2_gap = sum(outliers_sd3_dtotal)
-		
-	* Graph countries by number of outliers
-	graph hbar outliers_dtotal_hs2_gap, ///
+	* Graph
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var in `category_taxes' {
+		gsort -o_`var'
+		graph hbar o_`var',  ///
 				over(hs2_gap, sort(1) descending) ///
-				ytitle("") ///
-				yscale(range(205)) ///
-				title("Number of outliers among HS2 gap codes in declared total") ///
+				title("Number of outliers for biggest trade gap HS2 codes by "`var label') ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-				xsize(5.8) ///
+				ytitle("") ///
+				yscale(off) ///
+				ylabel(, nogrid) ///				
+				scheme(s1color) ///
 				nofill
 	
-	graph export "$intermediate_results/Graphs/outliers_3sd_hs2gap_dtotal.pdf", replace
+	graph export "$intermediate_results/Graphs/Taxes_o_`var'_hs2_gap.pdf", replace
+		
+		gsort -dev_`var'
+		graph hbar dev_`var',  ///
+				over(hs2_gap, sort(1) descending) ///
+				title("Sum of deviations in biggest trade gap HS2 codes by "`var label') ///
+				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(174000000000) off) ///
+				ylabel(, nogrid) ///				
+				scheme(s1color) ///
+				nofill
+	
+	graph export "$intermediate_results/Graphs/Taxes_dev_`var'_hs2_gap.pdf", replace
+	}
+	
+	restore
 
 	save "$intermediate_data/Price_data_2907_graph_taxes.dta", replace
 
@@ -1004,12 +1018,14 @@ graph hbar (sum) dev`var', over(monthyear) ///
 	encode(processed_channel), gen(channel_code)
 	
 	egen overall_total=rowtotal(total_taxes decl_total)
+	
 	eststo clear	
 
-	areg devtotal_tax logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb(i.co_code i.yearmonth) vce(cluster shed_code)
-	 eststo m1
+	reghdfe devtotal_tax logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb(i.co_code i.yearmonth) vce(cluster shed_code)
+	eststo m1
+
 	 
-	esttab 	using "$intermediate_results/Tables/reg2.tex", label r2 ar2 ///
+	esttab m1 using "$intermediate_results/Tables/reg2_new.rtf", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)	
 
 
