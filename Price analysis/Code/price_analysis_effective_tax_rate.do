@@ -590,9 +590,11 @@
 	
 	* Drop HS6 code for which number of observations are under 30
 	bys hs6: drop if _N<30
+	* (14,135 observations deleted)
 	
 	* Drop yearmonth for which number of observations are under 30
 	bys yearmonth: drop if _N<30
+	* (0 observations deleted)
 
 	
 	* Merge the data set containing the exchange rate variable
