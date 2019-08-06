@@ -32,8 +32,8 @@
 	
 /*
 	*Installation of a package to export tables as docx files
-	ssc install asdoc
-	ssc install estout
+	*ssc install asdoc
+	*ssc install estout
   
 	* Install ftools (remove program if it existed previously)
 	cap ado uninstall ftools
@@ -245,7 +245,7 @@
 				 hs2 == 88 | ///
 				 hs2 == 90 | ///
 				 hs2 == 30
-	
+         
 	* Generate hs6 code:
 	gen hs6=int(hs_code*100)
 	label variable hs6 "HS6 code"
@@ -424,7 +424,8 @@
 				blabel(bar, position(outside) format(%9.0fc) color(black))
 	
 	graph export "$intermediate_results/Graphs/Price_outliers_3sd_shed.pdf", replace
-	gsort - abs_dev
+	
+  gsort - abs_dev
 	* Graph top 10 Sheds by sum of deviation 
 	graph hbar abs_dev in 1/10, ///
 				over(shed_name, sort(1) descending) ///
@@ -466,7 +467,7 @@
 				ytitle("") ///
 				title("Top 10 countries with biggest sums of outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black))
-	
+        
 	graph export "$intermediate_results/Graphs/Price_absdev_co.pdf", replace
 	restore
 
@@ -555,7 +556,6 @@
 	ftools, compile
 	
 	eststo clear	
-
 	
 	* @ Aram- I am changing this to make more readable tables 
 	*Aram skipping the first reg if it crashes your computer
@@ -569,11 +569,18 @@
 	
 	gen dev=per_dev*av_unitprice
 	
-	reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb(i.co_code i.yearmonth) vce(cluster shed_code)
-	eststo m1
+	areg dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code )
+				
+	eststo m2 
+	*"% Deviation from the mean"
 	
-	reghdfe per_dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code)
-	eststo m2
+	areg per_dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code yearmonth)
+				
+	eststo m3 
+	*"% Deviation from the mean"
+	
+	esttab 	m2 m3 using "$intermediate_results/Tables/Determinants_of_PirceDeviation.rtf", label r2 ar2 ///
+			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
 
 	esttab m1 m2 using "$intermediate_results/Tables/Determinants_of_PirceDeviation.rtf", label r2 ar2 ///
 	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
@@ -710,10 +717,10 @@
 	label variable o_taxes "Outliers in taxes"
 	label variable o_extra_taxes "Outliers in extra taxes"
 	label variable o_total_taxes "Outliers in total taxes"
-	label variable o_decl_cust "Outliers in declared custom duties & levies"
+	label variable o_decl_cust_duty_levies "Outliers in declared custom duties & levies"
 	label variable o_decl_taxes "Outliers in declared taxes"
 	label variable o_decl_extra_taxes "Outliers in declared extra taxes"
-	label variable o_decl_total "Outliers in declared total taxes"
+	label variable o_decl_total_taxes "Outliers in declared total taxes"
 	
 	label define outliers_cust 0 "Not Outlier" 1 "Outlier"
 	label define outliers_taxes 0 "Not Outlier" 1 "Outlier"
@@ -745,6 +752,47 @@
 	save "$intermediate_data/Price_data_2907_taxes.dta", replace
 	
 	
+=======
+	label values o_extra outliers_extra
+	label values o_total outliers_total
+	label values o_dcust outliers_dcust
+	label values o_dtaxes outliers_dtaxes
+	label values o_dextra outliers_dextra
+	label values o_dtotal outliers_dtotal
+	
+	* Determine the % of outliers (3SD): @Kaustub: by this definition of outliers, and if the data were normally distributed, 
+	*we should have around 0.1 to 0.5 % outliers max
+	/*ta outliers_sd3_cust
+//	0.09% of observations are outliers
+
+	ta outliers_sd3_taxes
+//	0.03% of observations are outliers
+
+	ta outliers_sd3_extra
+//	0.09% of observations are outliers
+
+	ta outliers_sd3_total
+//	0.03% of observations are outliers
+
+	ta outliers_sd3_dcust
+//	0.09% of observations are outliers
+
+	ta outliers_sd3_dtaxes
+//	0.03% of observations are outliers
+
+	ta outliers_sd3_dextra
+//	0.09% of observations are outliers
+
+	ta outliers_sd3_dtotal
+//	0.03% of observations are outliers
+ */
+ 
+	asdoc tab1 outliers_sd3_cust outliers_sd3_taxes outliers_sd3_extra ///
+				outliers_sd3_total outliers_sd3_dcust outliers_sd3_dtaxes ///
+				outliers_sd3_dextra outliers_sd3_dtotal, replace label
+	
+	save "$intermediate_data/Price_data_2907_taxes.dta", replace
+
 				*------------- BAR PLOTS BY MONTH -------------*
 //----
 				
@@ -977,6 +1025,7 @@
 
 	reghdfe devtotal_tax logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb(i.co_code i.yearmonth) vce(cluster shed_code)
 	eststo m1
+
 	 
 	esttab m1 using "$intermediate_results/Tables/reg2_new.rtf", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)	
