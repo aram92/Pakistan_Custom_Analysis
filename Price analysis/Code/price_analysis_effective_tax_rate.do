@@ -318,6 +318,10 @@
 	* @ Alice what do you suggest, I saw that NO stands for number but I am not 
 	* sure if it is possible to convert it somehow.
 	
+	
+	* Drop HS6 code for which number of observations are under 30
+	bys hs6 yearmonth: drop if _N<30
+	
 	ta hs_code QT_code if hs_code>=7308&hs_code<=7309
 	
 	* For the moment we don't make any change and create the unit price based on 
@@ -567,14 +571,15 @@
 	*eststo m1 
 	*"Unit price"
 	
-	gen dev=per_dev*av_unitprice
+	gen ldev=log(per_dev*av_unitprice)
+	gen lperdev=log(per_dev)
 	
-	areg dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code )
+	areg ldev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code )
 				
 	eststo m2 
 	*"% Deviation from the mean"
 	
-	areg per_dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code yearmonth)
+	areg lper_dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb( i.co_code i.yearmonth) vce(cluster shed_code yearmonth)
 				
 	eststo m3 
 	*"% Deviation from the mean"
@@ -596,13 +601,8 @@
 	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
 	
 	* Drop HS6 code for which number of observations are under 30
-	bys hs6: drop if _N<30
-	* (14,135 observations deleted)
+	bys hs6 yearmonth: drop if _N<30
 	
-	* Drop yearmonth for which number of observations are under 30
-	bys yearmonth: drop if _N<30
-	* (0 observations deleted)
-
 	
 	* Merge the data set containing the exchange rate variable
 	merge m:1 year month using "$initial_data/Exchange_rate.dta", gen(_Merge_Tax)
