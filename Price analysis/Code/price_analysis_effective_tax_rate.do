@@ -362,9 +362,6 @@
 * ---------------------------------------------------------------------------- */
 * Generating Outliers
 * ---------------------------------------------------------------------------- *
-
-	* Drop HS6 code for which number of observations are under 30
-	bys hs6 yearmonth: drop if _N<30
 	
 	gen unit_price_USD=log(imports_USD/quantity)
 
@@ -387,7 +384,6 @@
 	bys hs6 yearmonth: gen dev= unit_price_USD-av_unitprice
 	bys hs6 yearmonth: gen abs_dev= abs(unit_price_USD-av_unitprice)
 
-
 	* Create variable for outliers
 	gen outliers_3sd=1
 
@@ -397,6 +393,35 @@
 	* Determine the % of outliers
 	ta outliers_3sd
 	* In this case we have 1.06% outliers
+*__
+	* Graph of distribution of outliers before dropping observations
+	graph hbar (sum) outliers_3sd, over(yearmonth) ///
+			title("Monthly number of outlier deviations from average price") ///
+			subtitle("before dropping observations") ///
+			blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+			ytitle("") ///
+			yscale(range(22000) off) ///
+			ylabel(, nogrid) ///
+			xsize(6) ///
+			scheme(s1color)
+	
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop.pdf", replace
+	
+	* Drop HS6 code for which number of observations are under 30
+	bys hs6 yearmonth: drop if _N<30
+	
+	* Graph of distribution of outliers after dropping observations
+	graph hbar (sum) outliers_3sd, over(yearmonth) ///
+			title("Monthly number of outlier deviations from average price") ///
+			subtitle("after dropping observations") ///
+			blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+			ytitle("") ///
+			yscale(range(22000) off) ///
+			ylabel(, nogrid) ///
+			xsize(6) ///
+			scheme(s1color)
+	
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_postdrop.pdf", replace
 	
 	
 	save "$intermediate_data/Price_data_2907_outliers.dta", replace 
@@ -879,13 +904,15 @@
 	
 	egen overall_total=rowtotal(total_taxes decl_total)
 	
+	keep total_taxes logimpUSD logqua channel_code shed_code hs4 co_code yearmonth devtotal_taxes
+	
 	eststo clear	
-*	reghdfe total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster hs4) compact poolsize(5)
-	areg total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(yearmonth) vce(cluster hs4)
+	reghdfe total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster hs4)
+*	areg total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(yearmonth) vce(cluster hs4)
 	eststo m1
 
-*	reghdfe devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster shed_code) compact poolsize(5)
-	areg devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(yearmonth) vce(cluster shed_code)
+	reghdfe devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster shed_code)
+*	areg devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(yearmonth) vce(cluster shed_code)
 	eststo m2
 	 
 	esttab m1 using "$intermediate_results/Tables/reg2_new_8_18.rtf", label r2 ar2 ///
@@ -1008,19 +1035,19 @@
 	
 	* Generate hs2 and hs6 code:
 	gen hs2=int(hs4/100)
-	gen hs6=int(hs_code*100)
+	gen hs6=int(hs4*100)
 	label variable hs6 "HS6 code"
-	
+
 	preserve 
 	collapse (sum) netweightkg altqtyunit tradevalueus, by(hs6 QT_code )
 	sort hs6 QT_code
 	save "$exports_data\ExportsToPK_collapsehs6.dta", replace
 	restore
 
-	* Sum stats per hs6 :
-	use "$imports_data\imports_yearcollapsedhs6_all.dta"
+	* Sum stats per hs6 : @Alice since ExportsToPK_collapsehs6 doesn't have co, I've skipped it from the merge command
+	use "$imports_data\imports_yearcollapsedhs6_all.dta", clear
 	sort hs6 QT_code 
-	merge 1:1 hs6 QT_code co using "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\ExportsToPK_comtrade\ExportsToPK_collapsehs2.dta"
+	merge 1:1 hs6 QT_code using "$exports_data\ExportsToPK_collapsehs6.dta"
 	save "$onedrive\Mirror and desc stats\matched_hs6.dta", replace
 
 	replace tradevalueus =0 if tradevalueus ==.
@@ -1032,8 +1059,8 @@
 	bys hs6 QT_code : gen trade_gap_HS6=tradevalueus-imports_USD
 	bys hs6 QT_code : gen weight_gap_HS6=altqtyunit-quantity
 
-	collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS2 altqtyunit quantity, by(hs6 QT_code )
-
+	collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS6 altqtyunit quantity, by(hs6 QT_code )
+	gen hs2=int(hs6/10000)
 	gen tenpercciffob=tradevalueus*0.15
 	gen allowedgap=imports_USD*0.15
 
@@ -1055,19 +1082,19 @@
 
 	collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS6 altqtyunit quantity, by(hs6)
 	sort hs6 
-	save "$intermediate_data/trade_gaps.dta"
+	save "$intermediate_data/trade_gaps.dta", replace
 
 	use "$intermediate_data/Price_data_2907_taxes.dta"
 	keep if year==2017
 
 	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (mean) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
 	sort hs6
-	merge 1:1 hs6 co using "$intermediate_data/trade_gaps.dta"
+	merge 1:1 hs6 using "$intermediate_data/trade_gaps.dta"
 
 	eststo clear
-	reghdfe trade_gap_HS6 total_tax av_total_taxes, vce(cluster)
+	reghdfe trade_gap_HS6 total_tax av_total_taxes, vce(cluster shed_name)
 	eststo m1
-	reghdfe trade_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster)
+	reghdfe trade_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster shed_name)
 	eststo m2
 	esttab m1 m2 using "$intermediate_results/Tables/DeterinantofGap_8_19.rtf", label r2 ar2 ///
 				se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
