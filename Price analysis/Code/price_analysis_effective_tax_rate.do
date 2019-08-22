@@ -31,10 +31,13 @@
 	version 12.1
 	
 /*
-	*Installation of a package to export tables as docx files
+	* Install of a package to export tables as docx files
 	ssc install asdoc
 	ssc install estout
   
+	* Install Tabplot package
+	ssc inst tabplot, replace
+	
 	* Install ftools (remove program if it existed previously)
 	cap ado uninstall ftools
 	ssc install ftools
@@ -75,7 +78,7 @@
 
 	* Kaustubh
 	if c(username)=="wb554990" {
-			global onedrive "C:/Users/wb554990/Documents/Pakistan Custom Data Analysis"
+			global onedrive "C:/Users/wb554990/OneDrive - WBG/Pakistan Custom Data Analysis"
 			}
 			
 	if c(username)=="kc" {
@@ -93,6 +96,8 @@
 	global intermediate_code		"$analysis_data/Code"
 	global intermediate_data		"$analysis_data/Data"
 	global intermediate_results		"$analysis_data/Results"
+	global imports_data				"$onedrive/Imports"
+	global exports_data				"$onedrive/ExportsToPK_comtrade"
 
 	* Upload the most recent data set 
 	use "$intermediate_data/Price_data_2907.dta", clear 
@@ -380,7 +385,7 @@
 
 	* create deviation per hs6 and yearmonth
 	bys hs6 yearmonth: gen dev= unit_price_USD-av_unitprice
-	bys hs6 yearmonth: egen abs_dev= abs(unit_price_USD-av_unitprice)
+	bys hs6 yearmonth: gen abs_dev= abs(unit_price_USD-av_unitprice)
 
 
 	* Create variable for outliers
@@ -401,16 +406,12 @@
 **************************************************************************
 	
 	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
-
 	
+	keep if outliers_3sd==1
+
 				*------------- BAR PLOTS BY MONTH -------------*
 		
 //----
-	* NUMBER OF OUTLIERS per HS code using 3SD, by month
-	gen abs_dev=abs(per_dev)
-	*Alice would drop this: preserve and then preserve and collapse
-	
-	keep if outliers_3sd==1
 	
 	*collapse per hs6 shed_name yearmonth and origin country: count to have the number of outliers, sum of absolute deviation)
 *	collapse (sum) abs_dev (count) outliers_3sd, by(hs6 shed_name yearmonth co) 
@@ -424,12 +425,12 @@
 			title("Monthly number of outlier deviations from average price") ///
 			blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(5300) off) ///
+			yscale(off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
 				
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_month_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_month_8_18.pdf", replace
 
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
@@ -442,11 +443,12 @@
 			ytitle("") ///
 			yscale(range(1250) off) ///
 			ylabel(, nogrid) ///
-			xsize(5.8) ///
+			xsize(6) ///
 			scheme(s1color)
 
-	graph export "$intermediate_results/Graphs/Price_absdev_month_year_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_absdev_month_year_8_18.pdf", replace
 	restore
+	
 	
 				*------------- BAR PLOTS BY SHED -------------*
 //---- 
@@ -464,12 +466,12 @@
 			title("Top 10 sheds with most" "outlier deviations from average price") ///
 			blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(8600) off) ///
+			yscale(range(60000) off) ///
 			ylabel(, nogrid) ///
-			xsize(7) ///
+			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_shed_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_shed_8_18.pdf", replace
 	
   gsort - abs_dev
 	* Graph top 10 Sheds by sum of deviation 
@@ -478,12 +480,12 @@
 			title("Top 10 sheds with biggest sums of" "outlier deviations from average prices") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
-			yscale(off) ///
+			yscale(range(10000) off) ///
 			ylabel(, nogrid) ///
-			xsize(7) ///
+			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_absdev_shed_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_absdev_shed_8_18.pdf", replace
 	
 	restore
 	
@@ -500,11 +502,11 @@
 				title("Top 10 countries with most" "outlier deviations from average price") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(5200) off) ///
+				yscale(off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_co_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_co_8_18.pdf", replace
 	
 	gsort -abs_dev
 		
@@ -514,11 +516,11 @@
 			title("Top 10 countries with biggest sums of" "outlier deviations from average prices") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
- 			yscale(range(840) off) ///
+ 			yscale(range(5300) off) ///
 			ylabel(, nogrid) ///
 			scheme(s1color)
        
-	graph export "$intermediate_results/Graphs/Price_absdev_co_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_absdev_co_8_18.pdf", replace
 	restore
 
 				*------------- BAR PLOTS BY HS2 CODE -------------*
@@ -536,11 +538,11 @@
 				title("Top 10 HS2 codes with most" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(off) ///
+				yscale(range(69000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_hs2_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_hs2_8_18.pdf", replace
 	
 	
 	gsort -abs_dev
@@ -550,11 +552,11 @@
 				title("Top 10 HS2 codes with biggest sums of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(2350) off) ///
+				yscale(range(11000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_absdev_hs2_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_absdev_hs2_8_18.pdf", replace
 	
 	restore
 	
@@ -571,11 +573,11 @@
 				title("HS2 codes with biggest trade gaps by number of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(off) ///
+				yscale(range(68000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_hs2gap_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_hs2gap_8_18.pdf", replace
 		
 	
 	gsort -abs_dev
@@ -585,11 +587,11 @@
 				title("HS2 codes with biggest trade gaps by sums of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(2350) off) ///
+				yscale(range(11000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_absdev_hs2gap_8_12.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_absdev_hs2gap_8_18.pdf", replace
 		
 	restore
 
@@ -631,11 +633,11 @@
 	qui 	reghdfe unit_price_USD logimpUSD logqua i.channel_code i.shed_code, ///
 			absorb(i.currency_code i.co_code i.yearmonth i.hs6) ///
 			vce(cluster shed_code yearmonth)
-	gen Mainco_code= 
+
 	eststo m1 
 	*"Unit price"
 	
-	reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(i.yearmonth), vce(cluster shed_code )		
+	reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(i.yearmonth) vce(cluster shed_code )		
 	eststo m2 
 	*"% Deviation from the mean"
 	reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.hs2, absorb(i.co_code i.yearmonth) vce(cluster shed_code yearmonth)			
@@ -645,7 +647,7 @@
 	esttab 	m2 using "$intermediate_results/Tables/Determinants_of_PriceDeviation.rtf_8_18", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
 
-	esttab m1 m2 using "$intermediate_results/Tables/Determinants_of_PriceDeviation_8_12.rtf", label r2 ar2 ///
+	esttab m1 m2 using "$intermediate_results/Tables/Determinants_of_PriceDeviation_8_18.rtf", label r2 ar2 ///
 	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
 	
 	
@@ -742,10 +744,24 @@
 	foreach var in `category_taxes' {
 		* Create means, SD by HS code
 		bys hs4 yearmonth : egen av_`var'= mean(`var')
-		gen sd_`var' = `var'
+		bys hs6 yearmonth: egen sd_`var' = sd(`var')
 		gen dev`var'=`var'-av_`var'
-		gen abs_dev`var'=abs(dev`var')
 		
+		* Create Lower bound for CI by HS code using 3SD
+		bys hs6 yearmonth: gen sd3LB_`var'= av_`var' - (3 * sd_`var')
+	
+		* Create Upper bound for CI by HS code using 3SD. NOT NEEDED AT THE MOMENT
+		bys hs6 yearmonth: gen sd3UB_`var'= av_`var' + (3 * sd_`var')
+	
+		* Create variable for outliers using 3SD
+		gen o_`var'=1
+
+		* Remove from outliers the values within 3SD
+		replace o_`var'=0 if `var' > sd3LB_`var'
+		
+		* Generate sum of absolute deviations from mean
+		bys hs_code: gen per_dev_`var'=(`var' - av_`var')/av_`var'
+		bys year month: egen dev_`var' = sum(abs(per_dev_`var'))
 	}
 	
 	
@@ -804,35 +820,39 @@
 	* Create graph of # of outliers per HS code using 3SD, by MONTH & YEAR
 	
 	use "$intermediate_data/Price_data_2907_taxes.dta", clear
-	preserve
-	gen hs4=int(hs6/2)
+
+	
+	*	gen hs4=int(hs6/2)	   
+
 	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
 	foreach var of local category_taxes {
+		preserve
 		collapse (mean) `var', by(hs6)
-		graph hbar (freq) `var', ///
-					title("Distribution of average taxation rate per HS6 code for "`var') ///
-					blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-					ytitle("") ///
-					yscale(range(5450) off) ///
-					ylabel(, nogrid) ///
-					scheme(s1color)
+
+		hist `var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+			title("Distribution of average taxation rate per HS6 code for "`var') ///
+			xtitle("Taxation rate (%)") xlabel(#10) xtick(#40) color(dkgreen) ///
+			lstyle(axisline) graphregion(style(none) color(gs16))
+			
 		graph export "$intermediate_results/Graphs/Taxes_`var'_Effective_8_18.pdf", replace
-		
 		restore
+		
+		
+		preserve
 		gen m`var'=`var'
 		collapse (min) `var' (max) m`var', by(hs6)
 		gen d=m`var'-`var'
-		graph hbar (freq) d, ///
-					title("Distribution of difference between the minimum and maximum taxation rate per HS6 code for "`var') ///
-					blabel(bar, position(outside) format(%9.0fc) color(black)) ///
-					ytitle("") ///
-					yscale(range(5450) off) ///
-					ylabel(, nogrid) ///
-					scheme(s1color)
+		
+		hist `var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+			title("Distribution of difference between the minimum" "and maximum taxation rate per HS6 code for "`var') ///
+			xtitle("Taxation rate (%)") xlabel(#10) xtick(#40) color(dkgreen) ///
+			lstyle(axisline) graphregion(style(none) color(gs16))
+		
 		graph export "$intermediate_results/Graphs/Taxes_`var'_diff_8_18.pdf", replace
 		
 		restore
 	}
+	
 	
 //----	
 	
@@ -860,183 +880,197 @@
 	egen overall_total=rowtotal(total_taxes decl_total)
 	
 	eststo clear	
-	reghdfe total_tax logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code i.yearmonth, vce(cluster hs4)
+*	reghdfe total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster hs4) compact poolsize(5)
+	areg total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(yearmonth) vce(cluster hs4)
 	eststo m1
-	reghdfe devtotal_tax logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code i.yearmonth, vce(cluster shed_code)
+
+*	reghdfe devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster shed_code) compact poolsize(5)
+	areg devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(yearmonth) vce(cluster shed_code)
 	eststo m2
 	 
 	esttab m1 using "$intermediate_results/Tables/reg2_new_8_18.rtf", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
 	save "$intermediate_data/Price_data_2907_regression_taxes.dta", replace
 
-**********************Revenue loss estimation using previously calculated trade gaps:
-use "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\Imports\imports_2017_2018.full.dta", replace
 
-gen QT_code="Number of items"
- replace QT_code="Thousands" if quantity_unit_code=="1000"
- replace QT_code="Carats" if quantity_unit_code=="CARA" 
- replace QT_code="Cubic meters" if quantity_unit_code=="CUM"  
- replace QT_code="Kg" if quantity_unit_code=="KG" 
- replace QT_code="Volume in liters" if quantity_unit_code=="L" 
- replace QT_code="SQM" if quantity_unit_code=="METE" 
- replace QT_code="Number of items" if quantity_unit_code=="NO" 
- replace QT_code="Number of items" if quantity_unit_code=="PACK" 
- replace QT_code="Number of pairs" if quantity_unit_code=="PAIR"
- replace QT_code="Number of pairs" if quantity_unit_code=="Pair"
- replace QT_code="SQM" if quantity_unit_code=="SQM"
- replace QT_code="Cubic meters" if quantity_unit_code=="cum"
- replace QT_code="Kg" if quantity_unit_code=="kg"
- replace QT_code="Number of items" if quantity_unit_code=="no" 
- replace QT_code="Number of pairs" if quantity_unit_code=="pair"
- replace QT_code="SQM" if quantity_unit_code=="sqm"
+	**********************Revenue loss estimation using previously calculated trade gaps:
+	use "$imports_data\imports_2017_2018.full.dta", replace
 
- 
-collapse (sum) import_export_value_rs declaredimportvalue netweight quantity,by(hs6 QT_code date co)
-gen month=month(date)
-gen year=year(date)
-gen hs2=int(hs4/100)
-save "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\Imports\imports_yearcollapsed.full.dta", replace
-
-drop if year!=2017
-sort year month
-
-merge m:1 year month using "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\Mirror and desc stats\Exchange_rate.dta"
-drop if _merge!=3
-gen imports_USD=import_export_value_rs/USDollar
-save "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\Imports\imports_yearcollapsed.full.dta", replace
-
-preserve
-collapse (sum) imports_USD declaredimportvalue netweigh quantity ,by(hs6 QT_code)
-save "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\Imports\imports_yearcollapsedhs6_all.dta", replace
-restore
-
- * use comtrade data
- use "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\ExportsToPK_comtrade\ExportsToPK.dta"
-gen co=origin_country
-replace co="United States"  if co=="USA"
-replace co="European Union" if co=="Austria" | ///
-	co=="Belgium" | ///
-	co=="Bulgaria" | ///
-	co=="Croatia" | ///
-	co=="Republic of Cyprus" | ///
-	co=="Czech Republic" | ///
-	co=="Denmark" | ///
-	co=="Estonia" | ///
-	co=="Finland" | ///
-	co=="France" | ///
-	co=="Germany" | ///
-	co=="Greece" | ///
-	co=="Hungary" | /// 
-	co=="Ireland" | ///
-	co=="Italy" | ///
-	co=="Latvia" | ///
-	co=="Lithuania" | ///
-	co=="Luxembourg" | ///
-	co=="Malta" | ///
-	co=="Netherlands" | ///
-	co=="Poland" | ///
-	co=="Portugal" | ///
-	co=="Romania" | ///
-	co=="Slovakia" | ///
-	co=="Slovenia" | ///
-	co=="Spain" | ///
-	co=="Sweden" | ///
-	co=="United Kingdom" | ///
-	co=="Azores" | ///
-	co=="Europein Union" | ///
-	co=="Balearic Is" | ///
-	co=="Czechia" | ///
-	co=="Madeira" | ///
-	co=="Liechtenstein" | ///
-	co=="German Fedr Republic" | ///
-	co=="German Demo Republic" | ///
-	co=="Faeroe Islands" | ///
-	co=="Czechoslovakia"
-
-replace co="Bolivia" if co=="Bolivia (Plurinational State of)"
-replace co="Bosnia" if co=="Bosnia And Herzegovina" | co=="Bosnia Herzegovina"
-replace co="China" if co=="China, Hong Kong SAR" | co==" Hong Kong, china "
-replace co="UAE" if co=="UNITED ARAB EMIRATES" | co=="United Arab Emirates"
-replace co="USA" if co=="United States Minor Outlying I" | co=="Virgin Islands U.S. " | co==" U.S Misc Pav Islands" | co=="United States"
-replace co="Dominican Republic" if co=="Dominica" | co=="Dominican Rep." |co =="Dominican Republic"
+	* Generate hs6 code:
+	gen hs6=int(hs_code*100)
+	label variable hs6 "HS6 code"
 
 	
-gen QT_code=""
-replace QT_code="SQM" if qtyunit=="Area in square metres"
-replace altqtyunit=altqtyunit*12 if qtyunit=="Dozen of items"
-replace QT_code="Number of items" if qtyunit=="Dozen of items"
-replace QT_code="Number of items" if qtyunit=="No Quantity"
-replace QT_code="Number of items" if qtyunit=="Number of items"
-replace QT_code="Number of pairs" if qtyunit=="Number of pairs"
-replace altqtyunit=altqtyunit*1000 if qtyunit=="Thousands of items"
-replace QT_code="Number of pairs" if qtyunit=="Thousands of items"
-replace QT_code="Cubic meters" if qtyunit=="Volume in cubic meters"
-replace QT_code="Volume in liters" if qtyunit=="Volume in litres" 
-replace QT_code="Carats" if qtyunit=="Weight in carats"
-replace QT_code="Kg" if qtyunit=="Weight in kilograms"
-replace QT_code="Number of items" if qtyunit==""
+	gen QT_code="Number of items"
+	 replace QT_code="Thousands" if quantity_unit_code=="1000"
+	 replace QT_code="Carats" if quantity_unit_code=="CARA" 
+	 replace QT_code="Cubic meters" if quantity_unit_code=="CUM"  
+	 replace QT_code="Kg" if quantity_unit_code=="KG" 
+	 replace QT_code="Volume in liters" if quantity_unit_code=="L" 
+	 replace QT_code="SQM" if quantity_unit_code=="METE" 
+	 replace QT_code="Number of items" if quantity_unit_code=="NO" 
+	 replace QT_code="Number of items" if quantity_unit_code=="PACK" 
+	 replace QT_code="Number of pairs" if quantity_unit_code=="PAIR"
+	 replace QT_code="Number of pairs" if quantity_unit_code=="Pair"
+	 replace QT_code="SQM" if quantity_unit_code=="SQM"
+	 replace QT_code="Cubic meters" if quantity_unit_code=="cum"
+	 replace QT_code="Kg" if quantity_unit_code=="kg"
+	 replace QT_code="Number of items" if quantity_unit_code=="no" 
+	 replace QT_code="Number of pairs" if quantity_unit_code=="pair"
+	 replace QT_code="SQM" if quantity_unit_code=="sqm"
 
-gen hs2=int(hs4/100)
-preserve 
-collapse (sum) netweightkg altqtyunit tradevalueus, by(hs6 QT_code )
-sort hs6 QT_code
-save "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\ExportsToPK_comtrade\ExportsToPK_collapsehs6.dta", replace
-restore
+	 
+	collapse (sum) import_export_value_rs declaredimportvalue netweight quantity,by(hs6 QT_code date co)
+	gen month=month(date)
+	gen year=year(date)
+	gen hs2=int(hs6/10000)		//This was "hs4/100" initially I changed it - KC
+	save "$imports_data\imports_yearcollapsed.full.dta", replace
 
-* Sum stats per hs6 :
-use "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\Imports\imports_yearcollapsedhs6_all.dta"
-sort hs6 QT_code 
-merge 1:1 hs6 QT_code co using "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\ExportsToPK_comtrade\ExportsToPK_collapsehs2.dta"
-save "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\Mirror and desc stats\matched_hs6.dta", replace
+	drop if year!=2017
+	sort year month
 
-replace tradevalueus =0 if tradevalueus ==.
-replace imports_USD=0 if imports_USD==.
-replace altqtyunit =0 if altqtyunit ==.
-replace netweightkg =0 if netweightkg ==.
-replace  quantity =0 if  quantity ==.
+	merge m:1 year month using "$initial_data/Exchange_rate.dta"
+	drop if _merge!=3
+	gen imports_USD=import_export_value_rs/USDollar
+	save "$imports_data\imports_yearcollapsed.full.dta", replace
 
-bys hs6 QT_code : gen trade_gap_HS6=tradevalueus-imports_USD
-bys hs6 QT_code : gen weight_gap_HS6=altqtyunit-quantity
+	preserve
+	collapse (sum) imports_USD declaredimportvalue netweigh quantity, by(hs6 QT_code)
+	save "$imports_data\imports_yearcollapsedhs6_all.dta", replace
+	restore
 
-collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS2 altqtyunit quantity, by(hs6 QT_code )
+	 * use comtrade data
+	 use "$exports_data\ExportsToPK.dta"
+	gen co=origin_country
+	replace co="United States"  if co=="USA"
+	replace co="European Union" if co=="Austria" | ///
+		co=="Belgium" | ///
+		co=="Bulgaria" | ///
+		co=="Croatia" | ///
+		co=="Republic of Cyprus" | ///
+		co=="Czech Republic" | ///
+		co=="Denmark" | ///
+		co=="Estonia" | ///
+		co=="Finland" | ///
+		co=="France" | ///
+		co=="Germany" | ///
+		co=="Greece" | ///
+		co=="Hungary" | /// 
+		co=="Ireland" | ///
+		co=="Italy" | ///
+		co=="Latvia" | ///
+		co=="Lithuania" | ///
+		co=="Luxembourg" | ///
+		co=="Malta" | ///
+		co=="Netherlands" | ///
+		co=="Poland" | ///
+		co=="Portugal" | ///
+		co=="Romania" | ///
+		co=="Slovakia" | ///
+		co=="Slovenia" | ///
+		co=="Spain" | ///
+		co=="Sweden" | ///
+		co=="United Kingdom" | ///
+		co=="Azores" | ///
+		co=="Europein Union" | ///
+		co=="Balearic Is" | ///
+		co=="Czechia" | ///
+		co=="Madeira" | ///
+		co=="Liechtenstein" | ///
+		co=="German Fedr Republic" | ///
+		co=="German Demo Republic" | ///
+		co=="Faeroe Islands" | ///
+		co=="Czechoslovakia"
 
-gen tenpercciffob=tradevalueus*0.15
-gen allowedgap=imports_USD*0.15
+	replace co="Bolivia" if co=="Bolivia (Plurinational State of)"
+	replace co="Bosnia" if co=="Bosnia And Herzegovina" | co=="Bosnia Herzegovina"
+	replace co="China" if co=="China, Hong Kong SAR" | co==" Hong Kong, china "
+	replace co="UAE" if co=="UNITED ARAB EMIRATES" | co=="United Arab Emirates"
+	replace co="USA" if co=="United States Minor Outlying I" | co=="Virgin Islands U.S. " | co==" U.S Misc Pav Islands" | co=="United States"
+	replace co="Dominican Republic" if co=="Dominica" | co=="Dominican Rep." |co =="Dominican Republic"
 
-gen hs2_names="Animal Prod" if hs2<=6
-replace hs2_names="Veg. Prod" if hs2>=6 & hs2<16
-replace hs2_names=" Food Stuffs" if hs2>=16 & hs2<25
-replace hs2_names=" Mineral Prod" if hs2>=25 & hs2<28
-replace hs2_names="Chem/Allied Ind" if hs2>=28 & hs2<39
-replace hs2_names="Plastics/Rubber" if hs2>=39 & hs2<41
-replace hs2_names="Hides & Furs" if hs2>=41 & hs2<44
-replace hs2_names="Wood Products" if hs2>=44 & hs2<50
-replace hs2_names="Textiles" if hs2>=50 & hs2<64
-replace hs2_names="Footwear/Headgear" if hs2>=64 & hs2<68
-replace hs2_names="Stone/glass" if hs2>=68 & hs2<72
-replace hs2_names="Metals" if hs2>=72 & hs2<84
-replace hs2_names="Machinery/Elec." if hs2>=84 & hs2<86
-replace hs2_names="Transportation" if hs2>=86 & hs2<90
-replace hs2_names="Misc." if hs2>=90
+		
+	gen QT_code=""
+	replace QT_code="SQM" if qtyunit=="Area in square metres"
+	replace altqtyunit=altqtyunit*12 if qtyunit=="Dozen of items"
+	replace QT_code="Number of items" if qtyunit=="Dozen of items"
+	replace QT_code="Number of items" if qtyunit=="No Quantity"
+	replace QT_code="Number of items" if qtyunit=="Number of items"
+	replace QT_code="Number of pairs" if qtyunit=="Number of pairs"
+	replace altqtyunit=altqtyunit*1000 if qtyunit=="Thousands of items"
+	replace QT_code="Number of pairs" if qtyunit=="Thousands of items"
+	replace QT_code="Cubic meters" if qtyunit=="Volume in cubic meters"
+	replace QT_code="Volume in liters" if qtyunit=="Volume in litres" 
+	replace QT_code="Carats" if qtyunit=="Weight in carats"
+	replace QT_code="Kg" if qtyunit=="Weight in kilograms"
+	replace QT_code="Number of items" if qtyunit==""
 
-collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS6 altqtyunit quantity, by(hs6)
-sort hs6 
-save "$intermediate_data/trade_gaps.dta"
+	
+	* Generate hs2 and hs6 code:
+	gen hs2=int(hs4/100)
+	gen hs6=int(hs_code*100)
+	label variable hs6 "HS6 code"
+	
+	preserve 
+	collapse (sum) netweightkg altqtyunit tradevalueus, by(hs6 QT_code )
+	sort hs6 QT_code
+	save "$exports_data\ExportsToPK_collapsehs6.dta", replace
+	restore
 
-use "$intermediate_data/Price_data_2907_taxes.dta"
-keep if year==2017
+	* Sum stats per hs6 :
+	use "$imports_data\imports_yearcollapsedhs6_all.dta"
+	sort hs6 QT_code 
+	merge 1:1 hs6 QT_code co using "C:\Users\wb495814\OneDrive - WBG\Pakistan_Customs_analysis\ExportsToPK_comtrade\ExportsToPK_collapsehs2.dta"
+	save "$onedrive\Mirror and desc stats\matched_hs6.dta", replace
 
-collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (mean) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
-sort hs6
-merge 1:1 hs6 co using "$intermediate_data/trade_gaps.dta"
+	replace tradevalueus =0 if tradevalueus ==.
+	replace imports_USD=0 if imports_USD==.
+	replace altqtyunit =0 if altqtyunit ==.
+	replace netweightkg =0 if netweightkg ==.
+	replace  quantity =0 if  quantity ==.
 
-eststo clear
-reghdfe trade_gap_HS6 total_tax av_total_taxes, vce(cluster)
-eststo m1
-reghdfe trade_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster)
-eststo m2
-esttab m1 m2 using "$intermediate_results/Tables/DeterinantofGap_8_19.rtf", label r2 ar2 ///
-			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
+	bys hs6 QT_code : gen trade_gap_HS6=tradevalueus-imports_USD
+	bys hs6 QT_code : gen weight_gap_HS6=altqtyunit-quantity
+
+	collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS2 altqtyunit quantity, by(hs6 QT_code )
+
+	gen tenpercciffob=tradevalueus*0.15
+	gen allowedgap=imports_USD*0.15
+
+	gen hs2_names="Animal Prod" if hs2<=6
+	replace hs2_names="Veg. Prod" if hs2>=6 & hs2<16
+	replace hs2_names=" Food Stuffs" if hs2>=16 & hs2<25
+	replace hs2_names=" Mineral Prod" if hs2>=25 & hs2<28
+	replace hs2_names="Chem/Allied Ind" if hs2>=28 & hs2<39
+	replace hs2_names="Plastics/Rubber" if hs2>=39 & hs2<41
+	replace hs2_names="Hides & Furs" if hs2>=41 & hs2<44
+	replace hs2_names="Wood Products" if hs2>=44 & hs2<50
+	replace hs2_names="Textiles" if hs2>=50 & hs2<64
+	replace hs2_names="Footwear/Headgear" if hs2>=64 & hs2<68
+	replace hs2_names="Stone/glass" if hs2>=68 & hs2<72
+	replace hs2_names="Metals" if hs2>=72 & hs2<84
+	replace hs2_names="Machinery/Elec." if hs2>=84 & hs2<86
+	replace hs2_names="Transportation" if hs2>=86 & hs2<90
+	replace hs2_names="Misc." if hs2>=90
+
+	collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS6 altqtyunit quantity, by(hs6)
+	sort hs6 
+	save "$intermediate_data/trade_gaps.dta"
+
+	use "$intermediate_data/Price_data_2907_taxes.dta"
+	keep if year==2017
+
+	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (mean) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
+	sort hs6
+	merge 1:1 hs6 co using "$intermediate_data/trade_gaps.dta"
+
+	eststo clear
+	reghdfe trade_gap_HS6 total_tax av_total_taxes, vce(cluster)
+	eststo m1
+	reghdfe trade_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster)
+	eststo m2
+	esttab m1 m2 using "$intermediate_results/Tables/DeterinantofGap_8_19.rtf", label r2 ar2 ///
+				se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
 ************************Old code below
 
 /*------------- Bar plot by shed -------------*
