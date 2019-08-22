@@ -907,15 +907,15 @@
 	keep total_taxes logimpUSD logqua channel_code shed_code hs4 co_code yearmonth devtotal_taxes
 	
 	eststo clear	
-	reghdfe total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster hs4)
+	reghdfe total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster hs4) pool(5)
 *	areg total_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(yearmonth) vce(cluster hs4)
 	eststo m1
 
-	reghdfe devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster shed_code)
+	reghdfe devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(i.yearmonth) vce(cluster shed_code) pool(5)
 *	areg devtotal_taxes logimpUSD logqua i.channel_code i.shed_code i.hs4 i.co_code, absorb(yearmonth) vce(cluster shed_code)
 	eststo m2
 	 
-	esttab m1 using "$intermediate_results/Tables/reg2_new_8_18.rtf", label r2 ar2 ///
+	esttab m1 m2 using "$intermediate_results/Tables/reg2_new_8_18.rtf", label r2 ar2 ///
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
 	save "$intermediate_data/Price_data_2907_regression_taxes.dta", replace
 
