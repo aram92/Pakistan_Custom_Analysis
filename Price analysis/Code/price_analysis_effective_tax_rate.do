@@ -324,7 +324,7 @@
 	encode co_temp, gen (country)
 	
 	* Generate frequency distribution tables for yearmonth, shed_name, and hs2
-	asdoc tab1 yearmonth shed_name_temp hs2 country, replace label save(Freq. Dist. Tables.rtf)
+	asdoc tab1 yearmonth shed_name_temp hs2 country, replace label save(Freq_Dist_Tables_8_18.rtf)
 	
 	restore
 	
@@ -405,7 +405,7 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop_8_18.pdf", replace
 	
 	* Drop HS6 code for which number of observations are under 30
 	bys hs6 yearmonth: drop if _N<30
@@ -421,7 +421,7 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_postdrop.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_postdrop_8_18.pdf", replace
 	
 	
 	save "$intermediate_data/Price_data_2907_outliers.dta", replace 

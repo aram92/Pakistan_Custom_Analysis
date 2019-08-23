@@ -1,17 +1,23 @@
-* ******************************************************************** *
+/* ******************************************************************** *
 * ******************************************************************** *
 *  Analysis of Pakistan Custom Data
+
        ** PURPOSE:      Exploring the dataset and analyzing the data
-       ** OUTLINE:      PART 1: 
+       
+	   ** OUTLINE:      PART 1: 
                         PART 2: 
-                        PART 3: 
-						
-       ** IDS VAR:      hs_code, hs_2, hs_4
-       ** NOTES:
-       ** WRITEN BY:    Alice Duhaut, Kaustubh Chahande, Aram Gassama
-       ** Last date modified:  31 July 2019
+                        PART 3: 					
       
-	 
+	  
+	   ** IDS VAR:      hs_code, hs_2, hs_4
+      
+	   ** NOTES:
+       
+	   ** WRITEN BY:    Alice Duhaut, Kaustubh Chahande, Aram Gassama
+      
+	  ** Last date modified:  31 July 2019
+      
+	  
 * ******************************************************************** *
 * ******************************************************************** */
 	
@@ -34,14 +40,18 @@
 	* Install ftools (remove program if it existed previously)
 	cap ado uninstall ftools
 	ssc install ftools
+	
 	* Install reghdfe 5.x
 	cap ado uninstall reghdfe
 	ssc install reghdfe
+	
 	* Install boottest for Stata 11 and 12 only
 	if (c(version)<13) cap ado uninstall boottest
 	if (c(version)<13) ssc install boottest
+	
 	* Install moremata (sometimes used by ftools but not needed for reghdfe)
 	cap ssc install moremata
+	
 	ftools, compile
 	reghdfe, compile
 */
@@ -288,8 +298,6 @@
 * Frequency Distribution Tables
 * ---------------------------------------------------------------------------- *
 	
-	preserve
-	
 	* Generate new variable for sheds for the frequency distribution table
 	encode shed_name, gen(shed_name_temp)
 
@@ -311,7 +319,7 @@
 							co=="Singapore"
 							
 	encode co_temp, gen (country)
-  gen unit_price_USD=log(imports_USD/quantity)
+	gen unit_price_USD=log(imports_USD/quantity)
 
 	* Create mean by HS_Code and yearmonth
 	bys hs6 yearmonth: egen av_unitprice=mean(unit_price_USD)
@@ -331,8 +339,8 @@
 	* create deviation per hs6 and yearmonth
 	bys hs6 yearmonth: gen dev= unit_price_USD-av_unitprice
 	bys hs6 yearmonth: gen abs_dev= abs(unit_price_USD-av_unitprice)
-  sort hs6 co QT_unit
-  save "$intermediate_data/check_prices.dta"
+  sort hs6 co QT_code
+  save "$intermediate_data/check_prices.dta", replace
 	
 
   use "$exports_data\ExportsToPK.dta"
@@ -406,39 +414,44 @@
 	gen hs6=int(hs4*100)
 	label variable hs6 "HS6 code"
 
-  gen unit_price_comtrade=log(tradevalueus/altqtyunit)
-  gen sdu_price=unit_price_comtrade
-	collapse (sum) netweightkg altqtyunit tradevalueus (mean) unit_price_comtrade (sd) sdu_price, by(hs6 QT_code co )
-  sort hs6 co QT_code
-  save 	"$exports_data\ExportsToPK_collapsehs6_co.dta", replace
-merge 1:m hs6 co QT_code using "$intermediate_data/check_prices.dta"
+	gen unit_price_comtrade=log(tradevalueus/altqtyunit)
+	gen sdu_price=unit_price_comtrade
+	collapse (sum) netweightkg altqtyunit tradevalueus (mean) unit_price_comtrade (sd) sdu_price, by(hs6 QT_code co)
+	drop if hs6==. | QT_code=="" | co==""
+	sort hs6 co QT_code
+	save "$exports_data\ExportsToPK_collapsehs6_co.dta", replace
+	merge 1:m hs6 co QT_code using "$intermediate_data/check_prices.dta", generate(two)
+  
+  * We create the log variables for the regression
+	gen logimpUSD=log(imports_USD)
+	gen logqua=log(quantity)
+	
+	* We make sure that string variables that need to be considered as dummies
+	* are correctly encoded
+	encode(shed_name),gen (shed_code)
+	encode(co), gen(co_code)
+	encode(currency_abbreviation), gen(currency_code)
+	encode(processed_channel), gen(channel_code)
 
-gen dev2= unit_price_USD-unit_price_comtrade
-gen abs_dev2=abs(unit_price_USD-unit_price_comtrade)
-
-reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(i.yearmonth) vce(cluster shed_code yearmonth)		
+	gen dev2= unit_price_USD-unit_price_comtrade
+	gen abs_dev2=abs(unit_price_USD-unit_price_comtrade)
+ /*
+  reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(i.yearmonth) vce(cluster shed_code yearmonth)		
 	eststo m2 
 	*"% Deviation from the mean"
 	reghdfe dev2 logimpUSD logqua i.channel_code i.shed_code i.hs2 i.co_code, absorb( i.yearmonth) vce(cluster shed_code yearmonth)			
 	eststo m3 
 	*"% Deviation from the mean"
 
-	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_823.rtf", label r2 ar2 ///
+	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_8_23.rtf", label r2 ar2 ///
 	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
-	
+*/	
 	gen outliers_3sd=1
-  
-  
-  * Create lower bound for CI by HS_code using 3SD
-	bys  hs6 co: gen low_sd=unit_price_comtrade-3*sdu_price
-
-	* Create upper bound for CI by HS_code using 3SD
-	bys hs6 co: gen up_3d=unit_price_comtrade+3*sdu_price
 
 
 	* remove from outliers the values within the CI
-	replace outliers_3sd=0 if low_3d<unit_price_comtrade<up_3d
-	 Graph of distribution of outliers before dropping observations
+	replace outliers_3sd=0 if low_3sd<unit_price_comtrade<up_3sd
+	* Graph of distribution of outliers before dropping observations
 	graph hbar (sum) outliers_3sd, over(yearmonth) ///
 			title("Monthly number of outlier deviations from average price") ///
 			subtitle("before dropping observations") ///
@@ -449,8 +462,10 @@ reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop.pdf", replace
-	
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop_8_23.pdf", replace
+
+	* Drop HS6 code for which number of observations are under 30
+	bys hs6 yearmonth: drop if _N<30
 	
 	* Graph of distribution of outliers after dropping observations
 	graph hbar (sum) outliers_3sd, over(yearmonth) ///
@@ -463,16 +478,14 @@ reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_postdrop*_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_postdrop_8_23.pdf", replace
 	
 	
 
 **************************************************************************
 * 			Data Visualization
 **************************************************************************
-	
-	use "$intermediate_data/Price_data_2907_outliers.dta", clear 
-	
+		
 	keep if outliers_3sd==1
 
 				*------------- BAR PLOTS BY MONTH -------------*
@@ -551,7 +564,7 @@ reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_absdev_shed_8_18.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_absdev_shed_8_23.pdf", replace
 	
 	restore
 	
