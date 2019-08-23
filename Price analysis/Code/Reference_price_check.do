@@ -295,7 +295,7 @@
 	graph set window fontface "Times New Roman"
 	
 * ---------------------------------------------------------------------------- *
-* Frequency Distribution Tables
+* Reuse the code to generate reference price #1
 * ---------------------------------------------------------------------------- *
 	
 	* Generate new variable for sheds for the frequency distribution table
@@ -342,6 +342,10 @@
   sort hs6 co QT_code
   save "$intermediate_data/check_prices.dta", replace
 	
+	
+* ---------------------------------------------------------------------------- *
+* Use export data to generate reference price #2
+* ---------------------------------------------------------------------------- *
 
   use "$exports_data\ExportsToPK.dta"
 	gen co=origin_country
@@ -420,6 +424,8 @@
 	drop if hs6==. | QT_code=="" | co==""
 	sort hs6 co QT_code
 	save "$exports_data\ExportsToPK_collapsehs6_co.dta", replace
+	
+	* Merge
 	merge 1:m hs6 co QT_code using "$intermediate_data/check_prices.dta", generate(two)
   
   * We create the log variables for the regression
@@ -435,7 +441,10 @@
 
 	gen dev2= unit_price_USD-unit_price_comtrade
 	gen abs_dev2=abs(unit_price_USD-unit_price_comtrade)
- /*
+
+* ---------------------------------------------------------------------------- *
+* 			Check regressions
+* ---------------------------------------------------------------------------- *
   reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(i.yearmonth) vce(cluster shed_code yearmonth)		
 	eststo m2 
 	*"% Deviation from the mean"
@@ -445,7 +454,7 @@
 
 	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_8_23.rtf", label r2 ar2 ///
 	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
-*/	
+	
 	gen outliers_3sd=1
 
 
@@ -483,7 +492,7 @@
 	
 
 **************************************************************************
-* 			Data Visualization
+* 			Check graphs
 **************************************************************************
 		
 	keep if outliers_3sd==1
