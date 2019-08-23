@@ -1,24 +1,23 @@
 /* ******************************************************************** *
 * ******************************************************************** *
-
 *  Analysis of Pakistan Custom Data
 
-
        ** PURPOSE:      Exploring the dataset and analyzing the data
-
-       ** OUTLINE:      PART 1: 
+       
+	   ** OUTLINE:      PART 1: 
                         PART 2: 
-                        PART 3: 
-						
-       ** IDS VAR:      hs_code, hs_2, hs_4
-
-       ** NOTES:
-
-       ** WRITEN BY:    Alice Duhaut, Kaustubh Chahande, Aram Gassama
-
-       ** Last date modified:  31 July 2019
+                        PART 3: 					
       
-	 
+	  
+	   ** IDS VAR:      hs_code, hs_2, hs_4
+      
+	   ** NOTES:
+       
+	   ** WRITEN BY:    Alice Duhaut, Kaustubh Chahande, Aram Gassama
+      
+	  ** Last date modified:  31 July 2019
+      
+	  
 * ******************************************************************** *
 * ******************************************************************** */
 	
