@@ -761,7 +761,7 @@
 	su decl_total if tax_curr_disc_dec==1&decl_total>0
 	* We have a larger number of discrepancies with higher variations as well (now
 	* 95% of the discrepancies = 0 , around 10,000 observations)
-
+	drop if year!=2017
 	
 //----
 	* Loop to create outlier variables for each of the categories
@@ -1085,18 +1085,24 @@
 	save "$intermediate_data/trade_gaps.dta", replace
 
 	use "$intermediate_data/Price_data_2907_taxes.dta"
-	keep if year==2017
+	*keep if year==2017
 
 	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (mean) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
 	sort hs6
 	merge 1:1 hs6 using "$intermediate_data/trade_gaps.dta"
-
+	gen logtrad=log(trade_gap_HS6)
+	gen logavtaxes=log(av_total_taxes)
+	gen logtotaltaxes=log(total_taxes)
+	gen logsdtaxes=log(sd_total_taxes)
+	
 	eststo clear
 	reghdfe trade_gap_HS6 total_tax av_total_taxes, vce(cluster shed_name)
 	eststo m1
 	reghdfe trade_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster shed_name)
 	eststo m2
-	esttab m1 m2 using "$intermediate_results/Tables/DeterinantofGap_8_19.rtf", label r2 ar2 ///
+	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes, vce(cluster shed_name)
+
+	esttab m1 m2 m3 using "$intermediate_results/Tables/DeterinantofGap_8_23.rtf", label r2 ar2 ///
 				se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
 ************************Old code below
 
