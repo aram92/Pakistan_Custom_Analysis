@@ -460,6 +460,7 @@
 
 	* remove from outliers the values within the CI
 	replace outliers_3sd=0 if low_3sd<unit_price_comtrade<up_3sd
+	
 	* Graph of distribution of outliers before dropping observations
 	graph hbar (sum) outliers_3sd, over(yearmonth) ///
 			title("Monthly number of outlier deviations from average price") ///
@@ -518,7 +519,7 @@
 			xsize(6) ///
 			scheme(s1color)
 				
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_8_23.rtf", replace
 
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
@@ -529,12 +530,12 @@
 			title("Sum of deviations from as compared to the reference price") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(1250) off) ///
+			yscale(range(2100) off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
 
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_8_23.rtf", replace
 	restore
 	
 	
@@ -568,7 +569,7 @@
 			title("Top 10 sheds with biggest sums of" "outlier deviations from average prices") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(10000) off) ///
+			yscale(range(4800) off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
@@ -604,7 +605,7 @@
 			title("Top 10 countries with biggest sums of" "outlier deviations from average prices") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
- 			yscale(range(5300) off) ///
+ 			yscale(range(4900) off) ///
 			ylabel(, nogrid) ///
 			scheme(s1color)
        
@@ -626,7 +627,7 @@
 				title("Top 10 HS2 codes with most" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(69000) off) ///
+				yscale(range(68000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
@@ -640,7 +641,7 @@
 				title("Top 10 HS2 codes with biggest sums of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(11000) off) ///
+				yscale(range(5000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
@@ -661,7 +662,7 @@
 				title("HS2 codes with biggest trade gaps by number of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(68000) off) ///
+				yscale(range(70000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
@@ -675,7 +676,7 @@
 				title("HS2 codes with biggest trade gaps by sums of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(11000) off) ///
+				yscale(off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
