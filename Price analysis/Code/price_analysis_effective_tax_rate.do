@@ -123,6 +123,8 @@
 			co=="Faeroe Islands" | ///
 			co=="Finland" | ///
 			co=="France" | ///
+			co=="Frecnh West Indies" | ///
+			co=="French Guiana" | ///
 			co=="Germany" | ///
 			co=="German Fedr Republic" | ///
 			co=="German Demo Republic" | ///
@@ -144,7 +146,8 @@
 			co=="Slovenia" | ///
 			co=="Spain" | ///
 			co=="Sweden" | ///
-			co=="United Kingdom"
+			co=="United Kingdom" ///
+			
 
 	replace co="Bolivia" if co=="Bolivia (Plurinational State of)"
 	replace co="Bosnia" if co=="Bosnia And Herzegovina" | co=="Bosnia Herzegovina"
@@ -152,12 +155,12 @@
 	replace co="UAE" if co=="UNITED ARAB EMIRATES" | co=="United Arab Emirates"
 	replace co="USA" if co=="Puerto Rico" | ///
 						co=="United States Minor Outlying I" | ///
-						co=="Virgin Islands U.S. " | ///
+						co=="Virgin Islands U.S." | ///
 						co=="U.S Misc Pav Islands" | ///
 						co=="American Samoa" | ///						KC's ADDITION
 						co=="Johnston Island" | ///
 						co=="United States"
-	replace co="Dominican Republic" if co=="Dominica" | co=="Dominican Rep." | co =="Dominican Republic"
+	replace co="Dominican Republic" if co=="Dominican Rep." | co =="Dominican Republic"
 	replace co="Bahrain" if co=="Bahrain/kingdom Of Bahrain"   		 // KC's ADDITION + EVERYTHING BELOW THIS
 	replace co="Norway" if co=="Bouvet Island"						 //
 	replace co="Cambodia" if co=="Cambodia/kampuchea Democratic"	 // 
@@ -167,22 +170,22 @@
 							  co=="Cocos (keeling) Island" | ///
 							  co=="Heard Island And Mcdonald Isla" | ///
 							  co=="Norfolk Island"
-	replace co="Congo, Republic of the" if co=="Congo Republic Of"
+	replace co="Congo, Republic of the" if co=="Congo Republic Of" | co=="Congo"
 	replace co="Congo, Democratic Republic of the" if co=="Congo, democratic Republic Of"
 	replace co="Iran" if co=="Iran (islamic Republic Of)"
 	replace co="Ivory Coast" if co=="Ivory Coast / Cote D'ivoire"
 	replace co="North Korea" if co=="Korea (North)"
-	replace co="South Korea" if co=="Korea (South)" | co=="Korea Republic Of"
+	replace co="South Korea" if co=="Korea (South)" | co=="Korea Republic Of" | co=="Rep. of Korea"
+	replace co="Kazakhstan" if co=="Kazakistan"
 	replace co="Kyrgyzstan" if co=="Kyrgyz Republic" | co =="Kyrzyghistan"
 	replace co="Laos" if co=="Lao People's Democratic Republ"
 	replace co="Libya" if co=="Libyan Arab Jamhirya"
 	replace co="Moldova" if co=="MOLDOVA, REPUBLIC OF"
 	replace co="Madagascar" if co=="Malagasy Rep"
 	replace co="Myanmar" if co=="Myanmar/burma"
-	replace co="Russia" if co=="Russian Fedration"
+	replace co="Russia" if co=="Russian Fedration" | co=="Russian Federation"
 	replace co="Saint Kitts and Nevis" if co=="Saint Kitts  and Nevis" | ///
 			co=="St Christopher"
-	replace co="Samoa" if co=="Samda/samoa"
 	replace co="Suriname" if co=="Surinam"
 	replace co="Syria" if co=="Syrian Arab Republic"
 	replace co="Taiwan" if co=="Taiwan/sep Customs Territory O"
@@ -200,14 +203,15 @@
 	replace co="European Union" if co=="Falkland Island (malvinas)" //UK
 	replace co="North Macedonia" if co=="Former Yogoslav Republic Of Ma"
 	replace co="North Macedonia" if co=="Macedonia"
-	replace co="European Union" if co=="Frecnh West Indies" | co=="French Guiana"  //France
-	replace co="European Union" if co=="Guadeloupe"
 	replace co="China" if co=="Macao" 
 	replace co="USA" if co=="Marshall Islands"
 	replace co="European Union" if co=="Martinique"
 	replace co="European Union" if co=="Reunion" // France
 	replace co="European Union" if co=="South Georgia And The South Sa" //UK
 	replace co="Norway" if co=="Svalbard And Jan Mayen"
+	replace co="Venezuela" if co=="Venezuela, bolivarian Republic"
+	replace co="Tanzania" if co=="Tanzania, united Republic Of"
+	replace co="Tanzania" if co=="United Rep. of Tanzania"
 	* What to do about North/East/West Africa, Yugoslavia, Far East and all origins?? Not sure also
 	* about the territories in the netherlands, just put them in comments here in case
 	* Since they are all antilles, Shall we reclassify them as Netherlands Antilles ?
@@ -1013,7 +1017,7 @@
 	replace co="China" if co=="China, Hong Kong SAR" | co==" Hong Kong, china "
 	replace co="UAE" if co=="UNITED ARAB EMIRATES" | co=="United Arab Emirates"
 	replace co="USA" if co=="United States Minor Outlying I" | co=="Virgin Islands U.S. " | co==" U.S Misc Pav Islands" | co=="United States"
-	replace co="Dominican Republic" if co=="Dominica" | co=="Dominican Rep." |co =="Dominican Republic"
+	replace co="Dominican Republic" if co=="Dominican Rep." |co =="Dominican Republic"
 
 		
 	gen QT_code=""

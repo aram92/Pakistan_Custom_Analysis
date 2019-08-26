@@ -152,12 +152,12 @@
 	replace co="UAE" if co=="UNITED ARAB EMIRATES" | co=="United Arab Emirates"
 	replace co="USA" if co=="Puerto Rico" | ///
 						co=="United States Minor Outlying I" | ///
-						co=="Virgin Islands U.S. " | ///
+						co=="Virgin Islands U.S." | ///
 						co=="U.S Misc Pav Islands" | ///
 						co=="American Samoa" | ///						KC's ADDITION
 						co=="Johnston Island" | ///
 						co=="United States"
-	replace co="Dominican Republic" if co=="Dominica" | co=="Dominican Rep." | co =="Dominican Republic"
+	replace co="Dominican Republic" if co=="Dominican Rep." | co =="Dominican Republic"
 	replace co="Bahrain" if co=="Bahrain/kingdom Of Bahrain"   		 // KC's ADDITION + EVERYTHING BELOW THIS
 	replace co="Norway" if co=="Bouvet Island"						 //
 	replace co="Cambodia" if co=="Cambodia/kampuchea Democratic"	 // 
@@ -167,22 +167,22 @@
 							  co=="Cocos (keeling) Island" | ///
 							  co=="Heard Island And Mcdonald Isla" | ///
 							  co=="Norfolk Island"
-	replace co="Congo, Republic of the" if co=="Congo Republic Of"
+	replace co="Congo, Republic of the" if co=="Congo Republic Of" | co=="Congo"
 	replace co="Congo, Democratic Republic of the" if co=="Congo, democratic Republic Of"
 	replace co="Iran" if co=="Iran (islamic Republic Of)"
 	replace co="Ivory Coast" if co=="Ivory Coast / Cote D'ivoire"
 	replace co="North Korea" if co=="Korea (North)"
-	replace co="South Korea" if co=="Korea (South)" | co=="Korea Republic Of"
+	replace co="South Korea" if co=="Korea (South)" | co=="Korea Republic Of" | co=="Rep. of Korea"
+	replace co="Kazakhstan" if co=="Kazakistan"
 	replace co="Kyrgyzstan" if co=="Kyrgyz Republic" | co =="Kyrzyghistan"
 	replace co="Laos" if co=="Lao People's Democratic Republ"
 	replace co="Libya" if co=="Libyan Arab Jamhirya"
 	replace co="Moldova" if co=="MOLDOVA, REPUBLIC OF"
 	replace co="Madagascar" if co=="Malagasy Rep"
 	replace co="Myanmar" if co=="Myanmar/burma"
-	replace co="Russia" if co=="Russian Fedration"
+	replace co="Russia" if co=="Russian Fedration" | co=="Russian Federation"
 	replace co="Saint Kitts and Nevis" if co=="Saint Kitts  and Nevis" | ///
 			co=="St Christopher"
-	replace co="Samoa" if co=="Samda/samoa"
 	replace co="Suriname" if co=="Surinam"
 	replace co="Syria" if co=="Syrian Arab Republic"
 	replace co="Taiwan" if co=="Taiwan/sep Customs Territory O"
@@ -208,6 +208,9 @@
 	replace co="European Union" if co=="Reunion" // France
 	replace co="European Union" if co=="South Georgia And The South Sa" //UK
 	replace co="Norway" if co=="Svalbard And Jan Mayen"
+	replace co="Venezuela" if co=="Venezuela, bolivarian Republic"
+	replace co="Tanzania" if co=="Tanzania, united Republic Of"
+	replace co="Tanzania" if co=="United Rep. of Tanzania"
 	* What to do about North/East/West Africa, Yugoslavia, Far East and all origins?? Not sure also
 	* about the territories in the netherlands, just put them in comments here in case
 	* Since they are all antilles, Shall we reclassify them as Netherlands Antilles ?
@@ -339,7 +342,7 @@
 	* create deviation per hs6 and yearmonth
 	bys hs6 yearmonth: gen dev= unit_price_USD-av_unitprice
 	bys hs6 yearmonth: gen abs_dev= abs(unit_price_USD-av_unitprice)
-  sort hs6 co QT_code
+  sort hs6 year co QT_code
   save "$intermediate_data/check_prices.dta", replace
 	
 	
@@ -347,54 +350,126 @@
 * Use export data to generate reference price #2
 * ---------------------------------------------------------------------------- *
 
-  use "$exports_data\ExportsToPK.dta"
-	gen co=origin_country
-	replace co="United States"  if co=="USA"
+	import delimited "$exports_data/comtrade_2017_2018.csv", clear
+	
+	
+	gen co=reporter
 	replace co="European Union" if co=="Austria" | ///
-		co=="Belgium" | ///
-		co=="Bulgaria" | ///
-		co=="Croatia" | ///
-		co=="Republic of Cyprus" | ///
-		co=="Czech Republic" | ///
-		co=="Denmark" | ///
-		co=="Estonia" | ///
-		co=="Finland" | ///
-		co=="France" | ///
-		co=="Germany" | ///
-		co=="Greece" | ///
-		co=="Hungary" | /// 
-		co=="Ireland" | ///
-		co=="Italy" | ///
-		co=="Latvia" | ///
-		co=="Lithuania" | ///
-		co=="Luxembourg" | ///
-		co=="Malta" | ///
-		co=="Netherlands" | ///
-		co=="Poland" | ///
-		co=="Portugal" | ///
-		co=="Romania" | ///
-		co=="Slovakia" | ///
-		co=="Slovenia" | ///
-		co=="Spain" | ///
-		co=="Sweden" | ///
-		co=="United Kingdom" | ///
-		co=="Azores" | ///
-		co=="Europein Union" | ///
-		co=="Balearic Is" | ///
-		co=="Czechia" | ///
-		co=="Madeira" | ///
-		co=="Liechtenstein" | ///
-		co=="German Fedr Republic" | ///
-		co=="German Demo Republic" | ///
-		co=="Faeroe Islands" | ///
-		co=="Czechoslovakia"
+			co=="Azores" | ///
+			co=="Balearic Is" | ///
+			co=="Belgium" | ///
+			co=="Bulgaria" | ///
+			co=="Croatia" | ///
+			co=="Republic of Cyprus" | ///
+			co=="Cyprus" | ///									KC's ADDITION
+			co=="Czechia" | ///
+			co=="Czechoslovakia" | ///
+			co=="Czech Republic" | ///
+			co=="Denmark" | ///
+			co=="Estonia" | ///
+			co=="Europein Union" | ///
+			co=="Europien Union" | ///							KC's ADDITION
+			co=="Faeroe Islands" | ///
+			co=="Finland" | ///
+			co=="France" | ///
+			co=="Frecnh West Indies" | ///
+			co=="French Guiana" | ///
+			co=="Germany" | ///
+			co=="German Fedr Republic" | ///
+			co=="German Demo Republic" | ///
+			co=="Greece" | ///
+			co=="Hungary" | ///
+			co=="Ireland" | ///
+			co=="Italy" | ///
+			co=="Latvia" | ///
+			co=="Liechtenstein" | ///
+			co=="Lithuania" | ///
+			co=="Luxembourg" | ///
+			co=="Madeira" | ///
+			co=="Malta" | ///
+			co=="Netherlands" | ///
+			co=="Poland" | ///
+			co=="Portugal" | ///
+			co=="Romania" | ///
+			co=="Slovakia" | ///
+			co=="Slovenia" | ///
+			co=="Spain" | ///
+			co=="Sweden" | ///
+			co=="United Kingdom"
 
 	replace co="Bolivia" if co=="Bolivia (Plurinational State of)"
 	replace co="Bosnia" if co=="Bosnia And Herzegovina" | co=="Bosnia Herzegovina"
-	replace co="China" if co=="China, Hong Kong SAR" | co==" Hong Kong, china "
+	replace co="China" if co=="China, Hong Kong SAR" | co=="Hong Kong, china"
 	replace co="UAE" if co=="UNITED ARAB EMIRATES" | co=="United Arab Emirates"
-	replace co="USA" if co=="United States Minor Outlying I" | co=="Virgin Islands U.S. " | co==" U.S Misc Pav Islands" | co=="United States"
-	replace co="Dominican Republic" if co=="Dominica" | co=="Dominican Rep." |co =="Dominican Republic"
+	replace co="USA" if co=="Puerto Rico" | ///
+						co=="United States Minor Outlying I" | ///
+						co=="Virgin Islands U.S." | ///
+						co=="U.S Misc Pav Islands" | ///
+						co=="American Samoa" | ///						KC's ADDITION
+						co=="Johnston Island" | ///
+						co=="United States"
+	replace co="Dominican Republic" if co=="Dominican Rep." | co =="Dominican Republic"
+	replace co="Bahrain" if co=="Bahrain/kingdom Of Bahrain"   		 // KC's ADDITION + EVERYTHING BELOW THIS
+	replace co="Norway" if co=="Bouvet Island"						 //
+	replace co="Cambodia" if co=="Cambodia/kampuchea Democratic"	 // 
+	replace co="European Union" if co=="Canary Is"					 // Aram: This shall be Spain not an independent state
+	replace co="Kiribati" if co=="Canton-endbry Island"				 // 
+	replace co="Australia" if co=="Christmas Island" | ///
+							  co=="Cocos (keeling) Island" | ///
+							  co=="Heard Island And Mcdonald Isla" | ///
+							  co=="Norfolk Island"
+	replace co="Congo, Republic of the" if co=="Congo Republic Of" | co=="Congo"
+	replace co="Congo, Democratic Republic of the" if co=="Congo, democratic Republic Of"
+	replace co="Iran" if co=="Iran (islamic Republic Of)"
+	replace co="Ivory Coast" if co=="Ivory Coast / Cote D'ivoire"
+	replace co="North Korea" if co=="Korea (North)"
+	replace co="South Korea" if co=="Korea (South)" | co=="Korea Republic Of" | co=="Rep. of Korea"
+	replace co="Kazakhstan" if co=="Kazakistan"
+	replace co="Kyrgyzstan" if co=="Kyrgyz Republic" | co =="Kyrzyghistan"
+	replace co="Laos" if co=="Lao People's Democratic Republ"
+	replace co="Libya" if co=="Libyan Arab Jamhirya"
+	replace co="Moldova" if co=="MOLDOVA, REPUBLIC OF"
+	replace co="Madagascar" if co=="Malagasy Rep"
+	replace co="Myanmar" if co=="Myanmar/burma"
+	replace co="Russia" if co=="Russian Fedration" | co=="Russian Federation"
+	replace co="Saint Kitts and Nevis" if co=="Saint Kitts  and Nevis" | ///
+			co=="St Christopher"
+	replace co="Suriname" if co=="Surinam"
+	replace co="Syria" if co=="Syrian Arab Republic"
+	replace co="Taiwan" if co=="Taiwan/sep Customs Territory O"
+
+	* Aram
+	replace co="New Zealand" if co=="Tokelau"
+	replace co="European Union" if co=="Turks And  caicos Island" 
+	replace co="USA" if co=="U.S Misc Pav Islands" 
+	replace co="USA" if co=="Virgin Islands U.S"
+	replace co="USA" if co=="Wake Island"
+	*replace co="European Union" if co=="Aruba" //Netherlands
+	replace co="European Union" if co=="Anguilla" //UK
+	replace co="European Union" if co=="British Indian Ocean Territori"
+	*replace co="European Union" if co=="Curacao" //Netherlands
+	replace co="European Union" if co=="Falkland Island (malvinas)" //UK
+	replace co="North Macedonia" if co=="Former Yogoslav Republic Of Ma"
+	replace co="North Macedonia" if co=="Macedonia"
+	replace co="European Union" if co=="Frecnh West Indies" | co=="French Guiana"  //France
+	replace co="European Union" if co=="Guadeloupe"
+	replace co="China" if co=="Macao" 
+	replace co="USA" if co=="Marshall Islands"
+	replace co="European Union" if co=="Martinique"
+	replace co="European Union" if co=="Reunion" // France
+	replace co="European Union" if co=="South Georgia And The South Sa" //UK
+	replace co="Norway" if co=="Svalbard And Jan Mayen"
+	replace co="Venezuela" if co=="Venezuela, bolivarian Republic"
+	replace co="Tanzania" if co=="Tanzania, united Republic Of"
+	replace co="Tanzania" if co=="United Rep. of Tanzania"
+	* What to do about North/East/West Africa, Yugoslavia, Far East and all origins?? Not sure also
+	* about the territories in the netherlands, just put them in comments here in case
+	* Since they are all antilles, Shall we reclassify them as Netherlands Antilles ?
+
+	* what about neutral zone?
+	* What is Int.Brand Mfg.In Other Country? and Pacific Island Trtry ?
+
+	* for below, make sure that no conflicting replace with my previous cleanings
 
 		
 	gen QT_code=""
@@ -404,8 +479,7 @@
 	replace QT_code="Number of items" if qtyunit=="No Quantity"
 	replace QT_code="Number of items" if qtyunit=="Number of items"
 	replace QT_code="Number of pairs" if qtyunit=="Number of pairs"
-	replace altqtyunit=altqtyunit*1000 if qtyunit=="Thousands of items"
-	replace QT_code="Number of pairs" if qtyunit=="Thousands of items"
+	replace QT_code="Thousands" if qtyunit=="Thousands of items"
 	replace QT_code="Cubic meters" if qtyunit=="Volume in cubic meters"
 	replace QT_code="Volume in liters" if qtyunit=="Volume in litres" 
 	replace QT_code="Carats" if qtyunit=="Weight in carats"
@@ -413,20 +487,21 @@
 	replace QT_code="Number of items" if qtyunit==""
 
 	
-	* Generate hs2 and hs6 code:
-	gen hs2=int(hs4/100)
-	gen hs6=int(hs4*100)
+	* Generate hs6 and hs2 code:
+	gen hs6 = int(commoditycode)
 	label variable hs6 "HS6 code"
+	gen hs2=int(hs6/10000)
 
 	gen unit_price_comtrade=log(tradevalueus/altqtyunit)
 	gen sdu_price=unit_price_comtrade
-	collapse (sum) netweightkg altqtyunit tradevalueus (mean) unit_price_comtrade (sd) sdu_price, by(hs6 QT_code co)
-	drop if hs6==. | QT_code=="" | co==""
-	sort hs6 co QT_code
-	save "$exports_data\ExportsToPK_collapsehs6_co.dta", replace
+	
+	collapse (sum) netweightkg altqtyunit tradevalueus (mean) unit_price_comtrade (sd) sdu_price (asis) year, by(hs6 co QT_code)
+	*drop if hs6==. | QT_code=="" | co==""
+	sort hs6 year co QT_code
+	save "$exports_data/ExportsToPK_collapsehs6_co.dta", replace
 	
 	* Merge
-	merge 1:m hs6 co QT_code using "$intermediate_data/check_prices.dta", generate(two)
+	merge 1:m hs6 year co QT_code using "$intermediate_data/check_prices.dta", generate(merge2)
   
   * We create the log variables for the regression
 	gen logimpUSD=log(imports_USD)
@@ -446,10 +521,10 @@
 * 			Check regressions
 * ---------------------------------------------------------------------------- *
   reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(i.yearmonth) vce(cluster shed_code yearmonth)		
-	eststo m2 
+	eststo m1 
 	*"% Deviation from the mean"
 	reghdfe dev2 logimpUSD logqua i.channel_code i.shed_code i.hs2 i.co_code, absorb( i.yearmonth) vce(cluster shed_code yearmonth)			
-	eststo m3 
+	eststo m2
 	*"% Deviation from the mean"
 
 	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_8_23.rtf", label r2 ar2 ///
@@ -474,6 +549,8 @@
 	
 	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop_8_23.pdf", replace
 
+	preserve
+	
 	* Drop HS6 code for which number of observations are under 30
 	bys hs6 yearmonth: drop if _N<30
 	
@@ -490,6 +567,7 @@
 	
 	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_postdrop_8_23.pdf", replace
 	
+	restore
 	
 
 **************************************************************************
@@ -514,13 +592,12 @@
 			title("Monthly number of outlier deviations from average price") ///
 			blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 			ytitle("") ///
-			yscale(off) ///
+			yscale(range(21000) off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
 				
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_8_23.rtf", replace
-
+ graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_8_23.pdf", replace
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
 	
@@ -530,12 +607,12 @@
 			title("Sum of deviations from as compared to the reference price") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(2100) off) ///
+			yscale(range(2300) off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
 
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_8_23.rtf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_8_23.pdf", replace
 	restore
 	
 	
@@ -591,7 +668,7 @@
 				title("Top 10 countries with most" "outlier deviations from average price") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(off) ///
+				yscale(range(26500) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
@@ -662,7 +739,7 @@
 				title("HS2 codes with biggest trade gaps by number of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(70000) off) ///
+				yscale(range(68000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
@@ -685,4 +762,3 @@
 	restore
 
  
-
