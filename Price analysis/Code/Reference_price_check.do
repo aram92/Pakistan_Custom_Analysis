@@ -495,7 +495,7 @@
 	gen unit_price_comtrade=log(tradevalueus/altqtyunit)
 	gen sdu_price=unit_price_comtrade
 	
-	collapse (sum) netweightkg altqtyunit tradevalueus (mean) unit_price_comtrade (sd) sdu_price (asis) year, by(hs6 co QT_code)
+	collapse (sum) netweightkg altqtyunit tradevalueus (mean) unit_price_comtrade (sd) sdu_price, by(hs6 year co QT_code)
 	*drop if hs6==. | QT_code=="" | co==""
 	sort hs6 year co QT_code
 	save "$exports_data/ExportsToPK_collapsehs6_co.dta", replace
@@ -516,7 +516,14 @@
 
 	gen dev2= unit_price_USD-unit_price_comtrade
 	gen abs_dev2=abs(unit_price_USD-unit_price_comtrade)
+	
+	* Harmonizing post-merge HS2 values
+	replace hs2=int(hs6/10000)
+	
+	* Generate frequency distribution tables to see the distribution of unmatched data from the merge
+	asdoc tab1 year shed_code hs2 co_code if merge2==2, replace label save(Price_check_Freq_Dist_8_26.rtf)
 
+	save "$intermediate_data/Price_check_graphs.dta", replace
 * ---------------------------------------------------------------------------- *
 * 			Check regressions
 * ---------------------------------------------------------------------------- *
@@ -527,7 +534,7 @@
 	eststo m2
 	*"% Deviation from the mean"
 
-	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_8_23.rtf", label r2 ar2 ///
+	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_8_26.rtf", label r2 ar2 ///
 	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
 	
 	gen outliers_3sd=1
@@ -547,12 +554,13 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop_8_26.pdf", replace
 
 	preserve
 	
 	* Drop HS6 code for which number of observations are under 30
 	bys hs6 yearmonth: drop if _N<30
+	* The above command deletes 272,488 observations
 	
 	* Graph of distribution of outliers after dropping observations
 	graph hbar (sum) outliers_3sd, over(yearmonth) ///
@@ -565,7 +573,7 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_postdrop_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_postdrop_8_26.pdf", replace
 	
 	restore
 	
@@ -597,7 +605,7 @@
 			xsize(6) ///
 			scheme(s1color)
 				
- graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_8_23.pdf", replace
+ graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_8_26.pdf", replace
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
 	
@@ -607,12 +615,12 @@
 			title("Sum of deviations from as compared to the reference price") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(2300) off) ///
+			yscale(range(5200) off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
 
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_8_26.pdf", replace
 	restore
 	
 	
@@ -637,7 +645,7 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_shed_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_shed_8_26.pdf", replace
 	
   gsort - abs_dev2
 	* Graph top 10 Sheds by sum of deviation 
@@ -646,12 +654,12 @@
 			title("Top 10 sheds with biggest sums of" "outlier deviations from average prices") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(4800) off) ///
+			yscale(range(17000) off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_absdev_shed_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_absdev_shed_8_26.pdf", replace
 	
 	restore
 	
@@ -672,7 +680,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_co_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_co_8_26.pdf", replace
 	
 	gsort -abs_dev2
 		
@@ -682,11 +690,11 @@
 			title("Top 10 countries with biggest sums of" "outlier deviations from average prices") ///
 			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 			ytitle("") ///
- 			yscale(range(4900) off) ///
+ 			yscale(range(10000) off) ///
 			ylabel(, nogrid) ///
 			scheme(s1color)
        
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_co_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_co_8_26.pdf", replace
 	restore
 
 				*------------- BAR PLOTS BY HS2 CODE -------------*
@@ -704,11 +712,11 @@
 				title("Top 10 HS2 codes with most" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(68000) off) ///
+				yscale(off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2_8_26.pdf", replace
 	
 	
 	gsort -abs_dev2
@@ -718,11 +726,11 @@
 				title("Top 10 HS2 codes with biggest sums of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(5000) off) ///
+				yscale(range(17000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2_8_26.pdf", replace
 	
 	restore
 	
@@ -739,11 +747,11 @@
 				title("HS2 codes with biggest trade gaps by number of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(68000) off) ///
+				yscale(off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2gap_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2gap_8_26.pdf", replace
 		
 	
 	gsort -abs_dev2
@@ -753,11 +761,11 @@
 				title("HS2 codes with biggest trade gaps by sums of" "outlier deviations from average prices") ///
 				blabel(bar, position(outside) format(%9.3fc) color(black)) ///
 				ytitle("") ///
-				yscale(off) ///
+				yscale(range(17000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2gap_8_23.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2gap_8_26.pdf", replace
 		
 	restore
 
