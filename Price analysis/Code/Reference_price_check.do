@@ -524,18 +524,22 @@
 	asdoc tab1 year shed_code hs2 co_code if merge2==2, replace label save(Price_check_Freq_Dist_8_26.rtf)
 
 	save "$intermediate_data/Price_check_graphs.dta", replace
+
 * ---------------------------------------------------------------------------- *
 * 			Check regressions
 * ---------------------------------------------------------------------------- *
-  reghdfe dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(i.yearmonth) vce(cluster shed_code yearmonth)		
+	
+	areg dev logimpUSD logqua i.channel_code i.shed_code i.co_code i.hs2, absorb(yearmonth) vce(cluster shed_code)	
 	eststo m1 
 	*"% Deviation from the mean"
-	reghdfe dev2 logimpUSD logqua i.channel_code i.shed_code i.hs2 i.co_code, absorb( i.yearmonth) vce(cluster shed_code yearmonth)			
+	
+	areg dev2 logimpUSD logqua i.channel_code i.shed_code i.hs2 i.co_code, absorb(yearmonth) vce(cluster shed_code)	
 	eststo m2
 	*"% Deviation from the mean"
 
-	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_8_26.rtf", label r2 ar2 ///
+	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_8_26_final.rtf", label r2 ar2 ///
 	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) title ("Determinants of prices and deviations from the average price")
+		
 	
 	gen outliers_3sd=1
 
