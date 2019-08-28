@@ -922,8 +922,10 @@
 			se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
 	save "$intermediate_data/Price_data_2907_regression_taxes.dta", replace
 
-
-	**********************Revenue loss estimation using previously calculated trade gaps:
+/*
+*****************Revenue loss estimation using previously calculated trade gaps
+*****************(NEWER VERSION IN Reference_price_check.do)
+	
 	use "$imports_data\imports_2017_2018.full.dta", replace
 
 	* Generate hs6 code:
@@ -1107,6 +1109,9 @@
 
 	esttab m1 m2 m3 using "$intermediate_results/Tables/DeterinantofGap_8_23.rtf", label r2 ar2 ///
 				se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
+*/
+
+
 ************************Old code below
 
 /*------------- Bar plot by shed -------------*
