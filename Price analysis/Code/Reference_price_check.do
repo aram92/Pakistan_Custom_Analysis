@@ -352,7 +352,7 @@
 * Use export data to generate reference price #2
 * ---------------------------------------------------------------------------- *
 
-	import delimited "$exports_data/comtrade_2017_2018.csv", clear
+	import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	
 	
 	gen co=reporter
@@ -947,7 +947,7 @@
 	restore
 
 	 * use comtrade data
-	import delimited "$exports_data/comtrade_2017_2018.csv", clear
+	import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	
 	gen co=reporter
 	replace co="European Union" if co=="Austria" | ///
@@ -1088,6 +1088,7 @@
 	gen hs2=int(hs6/10000)
 	
 	preserve 
+	drop if year != 2017 	//40,313 observations deleted
 	collapse (sum) netweightkg altqtyunit tradevalueus, by(hs6 QT_code)
 	sort hs6 QT_code
 	save "$exports_data/ExportsToPK_collapsehs6.dta", replace
@@ -1153,15 +1154,29 @@
 	eststo reg_trade_gap1
 	reghdfe trade_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_trade_gap2
+	reghdfe weight_gap_HS6 total_tax av_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_weightgap_HS6_1
+	reghdfe weight_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_weightgap_HS6_2
 	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
 	eststo reg_logtrad
 
-	esttab reg_trade_gap1 reg_trade_gap2 reg_logtrad using "$intermediate_results/Tables/DeterminantsofGap_CHECK_8_26.rtf", label r2 ar2 ///
-				se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
+	esttab reg_trade_gap1 reg_trade_gap2 reg_weightgap_HS6_1 reg_weightgap_HS6_2 ///
+			reg_logtrad using ///
+			"$intermediate_results/Tables/DeterminantsofGap_CHECK_8_26.rtf", ///
+				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
+				replace nobaselevels style(tex)
 				
 	coefplot reg_trade_gap1, bylabel(DV: Trade Gap) || ///
 				reg_trade_gap2, bylabel(DV: Trade Gap) || ///
 				reg_logtrad, bylabel(DV: log(Trade Gap)) ||, byopts(xrescale) ///
+								xline(0) mlabel format(%14.3fc) mlabposition(2) ///
+								mlabgap(*2) bgcolor(white) ///
+								graphregion(fcolor(white)) grid(none) ///
+								scheme(s1color)
+	
+	coefplot reg_weightgap_HS6_1, bylabel(DV: Weight Gap) || ///
+				reg_trade_gap2, bylabel(DV: Weight Gap) ||, byopts(xrescale) ///
 								xline(0) mlabel format(%14.3fc) mlabposition(2) ///
 								mlabgap(*2) bgcolor(white) ///
 								graphregion(fcolor(white)) grid(none) ///
