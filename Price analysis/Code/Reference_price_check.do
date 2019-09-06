@@ -1161,9 +1161,8 @@
 	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
 	eststo reg_logtrad
 
-	esttab reg_trade_gap1 reg_trade_gap2 reg_weightgap_HS6_1 reg_weightgap_HS6_2 ///
-			reg_logtrad using ///
-			"$intermediate_results/Tables/DeterminantsofGap_CHECK_8_26.rtf", ///
+	esttab reg_trade_gap1 reg_trade_gap2 reg_weightgap_HS6_1 reg_weightgap_HS6_2 reg_logtrad using ///
+			"$intermediate_results/Tables/DeterminantsofGap_CHECK_9_4.rtf", ///
 				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
 				replace nobaselevels style(tex)
 				
@@ -1174,6 +1173,7 @@
 								mlabgap(*2) bgcolor(white) ///
 								graphregion(fcolor(white)) grid(none) ///
 								scheme(s1color)
+	quietly graph export "$intermediate_results/Graphs/TradeGap_DeterminantsofGap_9_4.png", replace
 	
 	coefplot reg_weightgap_HS6_1, bylabel(DV: Weight Gap) || ///
 				reg_trade_gap2, bylabel(DV: Weight Gap) ||, byopts(xrescale) ///
@@ -1182,4 +1182,4 @@
 								graphregion(fcolor(white)) grid(none) ///
 								scheme(s1color)
 					
-	quietly graph export "$intermediate_results/Graphs/PriceCoef_DeterminantsofGap_8_26.png", replace
+	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_9_4.png", replace

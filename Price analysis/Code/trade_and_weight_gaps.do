@@ -1,11 +1,45 @@
+* ******************************************************************** *
 
+	dis "`c(username)'" // The text that shows up is the username of your computer (say XXX), and insert that into the code below
+
+	*change to working directory
+
+	* Alice
+	if c(username)=="wb495814" {
+           * Put general folder where data and codes are stored, @Alice check that your path is correct.
+		   * I would though prefer you to put a linked to a desktop version of 
+		   * the folder if possible to avoid using dircetly raw_data 
+		   * from oned drive at this stage that we are still exploring
+		   
+			global onedrive "C:/Users/wb495814/OneDrive - WBG/Pakistan_Customs_analysis/Mirror and desc stats"
+            }
+			*
+	* Aram
+	if c(username)=="wb523133" {
+			global onedrive "C:/Users/wb523133/Desktop/IEConnect/Alice/Pakistan"
+            }
+
+	* Kaustubh
+	if c(username)=="wb554990" {
+			global onedrive "C:/Users/wb554990/OneDrive - WBG/Pakistan Custom Data Analysis"
+			}
+			
+	if c(username)=="kc" {
+			global onedrive "/Users/kc/Documents/World Bank/Pakistan Price Analysis"
+			}
+ 
+ * ******************************************************************** *
+			
 	import delimited "$imports_data/imports_comtrade_2017_2018.csv", clear
 	
 	foreach x of varlist * {
          rename `x' imp_`x'
 	}
 
-	gen co=imp_reporter
+	* Dropping reporter as its only value is Pakistan in the case of imports
+	drop imp_reporter
+	
+	gen co=imp_partner
 	replace co="European Union" if co=="Austria" | ///
 			co=="Azores" | ///
 			co=="Balearic Is" | ///
@@ -317,7 +351,7 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	
 	bys hs4 QT_code: gen trade_gap_hs4=exp_tradevalueus-imp_tradevalueus       
 	bys hs4 QT_code: gen weight_gap_hs4=exp_altqtyunit-imp_altqtyunit
-	/* The above two commands generate 400 missing values in each of the two
+	/* The above two commands generate 387 missing values in each of the two
 		variables, which are the ones that were not matched in the merge.
 		This can be confirmed by the following two commands:
 	*/
@@ -341,11 +375,11 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 				title("Top 10 HS4 codes with largest trade gaps" "between export and import comtrade data") ///
 				blabel(bar, position(outside) format(%16.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(5000000000) off) ///
+				yscale(off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/tradegap_comtrade_9_4.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/tradegap_comtrade_hs4_9_4.png", as(png) height(800) replace
 
 	
 	gsort -weight_gap_hs4
@@ -355,8 +389,8 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 				title("Top 10 HS4 codes with largest weight gaps" "between export and import comtrade data") ///
 				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(5000000000) off) ///
+				yscale(range(-400000000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
-				
-	graph export "$intermediate_results/Graphs/weightgap_comtrade_9_4.png", as(png) height(800) replace
+			
+	graph export "$intermediate_results/Graphs/weightgap_comtrade_hs4_9_4.png", as(png) height(800) replace
