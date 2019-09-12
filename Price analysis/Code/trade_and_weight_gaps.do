@@ -28,6 +28,20 @@
 			global onedrive "/Users/kc/Documents/World Bank/Pakistan Price Analysis"
 			}
  
+* ---------------------------------------------------------------------------- *
+*  				Set globals to allow everyone to use the same code
+* ---------------------------------------------------------------------------- *
+*	set scheme plotplainblind
+	
+	global initial_data   			"$onedrive/Code"
+	global analysis_data          	"$onedrive/Price analysis" 
+	global intermediate_code		"$analysis_data/Code"
+	global intermediate_data		"$analysis_data/Data"
+	global intermediate_results		"$analysis_data/Results"
+	global imports_data				"$onedrive/Imports"
+	global exports_data				"$onedrive/ExportsToPK_comtrade"
+
+ 
  * ******************************************************************** *
 			
 	import delimited "$imports_data/imports_comtrade_2017_2018.csv", clear
@@ -360,37 +374,73 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	
 	save "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT.dta", replace
 	
-**************************************************************************
-* 			Data Visualization
-**************************************************************************
+********************************************************************************
+* 								Data Visualization
+********************************************************************************
 	
 	use "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT.dta", clear
 
 	collapse (sum) trade_gap_hs4 weight_gap_hs4, by(hs4)
 	
+	
+*--------------------------- Graphs for Trade Gaps *---------------------------
+
+	* Graph with 10 largest positive trade gaps
 	gsort -trade_gap_hs4
 	
 	graph hbar trade_gap_hs4 in 1/10, ///
 				over(hs4, sort(1) descending) ///
-				title("Top 10 HS4 codes with largest trade gaps" "between export and import comtrade data") ///
+				title("Top 10 HS4 codes with largest positive trade gaps" "between export and import comtrade data") ///
 				blabel(bar, position(outside) format(%16.0fc) color(black)) ///
 				ytitle("") ///
 				yscale(off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/tradegap_comtrade_hs4_9_4.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/tradegap1_comtrade_hs4_9_4.png", as(png) height(800) replace
 
 	
-	gsort -weight_gap_hs4
+	* Graph with 10 largest negative trade gaps
+	gsort trade_gap_hs4
 	
 	graph hbar trade_gap_hs4 in 1/10, ///
+				over(hs4, sort(1)) ///
+				title("Top 10 HS4 codes with largest negative trade gaps" "between export and import comtrade data") ///
+				blabel(bar, position(outside) format(%16.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(-30000000000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
+
+	graph export "$intermediate_results/Graphs/tradegap2_comtrade_hs4_9_4.png", as(png) height(800) replace 
+				
+
+*--------------------------- Graphs for Weight Gaps ---------------------------
+
+	* Graph with 10 largest positive weight gaps
+	gsort -weight_gap_hs4
+	
+	graph hbar weight_gap_hs4 in 1/10, ///
 				over(hs4, sort(1) descending) ///
-				title("Top 10 HS4 codes with largest weight gaps" "between export and import comtrade data") ///
+				title("Top 10 HS4 codes with largest positive weight gaps" "between export and import comtrade data") ///
 				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(-400000000) off) ///
+				yscale(range(1000000000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 			
-	graph export "$intermediate_results/Graphs/weightgap_comtrade_hs4_9_4.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/weightgap1_comtrade_hs4_9_4.png", as(png) height(800) replace
+
+	* Graph with 10 largest negative weight gaps
+	gsort weight_gap_hs4
+	
+	graph hbar weight_gap_hs4 in 1/10, ///
+				over(hs4, sort(1)) ///
+				title("Top 10 HS4 codes with largest negative weight gaps" "between export and import comtrade data") ///
+				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(-57000000000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
+			
+	graph export "$intermediate_results/Graphs/weightgap2_comtrade_hs4_9_4.png", as(png) height(800) replace
