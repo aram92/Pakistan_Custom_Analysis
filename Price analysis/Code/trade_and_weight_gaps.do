@@ -1,4 +1,4 @@
-* ******************************************************************** *
+********************************************************************************
 
 	dis "`c(username)'" // The text that shows up is the username of your computer (say XXX), and insert that into the code below
 
@@ -196,6 +196,15 @@
 	gen imp_unitprice_comtrade=log(imp_tradevalueus/imp_altqtyunit)
 	gen imp_sdu_price=imp_unitprice_comtrade
 	
+	save "$imports_data/ImportsToPK_clean.dta", replace
+	
+	preserve
+	drop if imp_year != 2017
+	collapse (sum) imp_netweightkg imp_altqtyunit imp_tradevalueus imp_unitprice_comtrade, by(hs4 QT_code)
+	sort hs4 QT_code
+	save "$imports_data/ImportsToPK2017_collapsehs4_QT.dta", replace
+	restore
+	
 	collapse (sum) imp_netweightkg imp_altqtyunit imp_tradevalueus imp_unitprice_comtrade, by(hs4 QT_code)
 	sort hs4 QT_code
 	save "$imports_data/ImportsToPK_collapsehs4_QT.dta", replace
@@ -351,6 +360,25 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	gen exp_unitprice_comtrade=log(exp_tradevalueus/exp_altqtyunit)
 	gen exp_sdu_price=exp_unitprice_comtrade
 	
+	save "$exports_data/ExportsToPK_clean.dta", replace
+	
+	preserve
+	
+	drop if exp_year != 2017
+	collapse (sum) exp_netweightkg exp_altqtyunit exp_tradevalueus exp_unitprice_comtrade, by(hs4 QT_code)
+	sort hs4 QT_code
+	save "$exports_data/ExportsToPK2017_collapsehs4_QT.dta", replace
+	
+	merge 1:1 hs4 QT_code using "$imports_data/ImportsToPK2017_collapsehs4_QT.dta"
+	
+	bys hs4 QT_code: gen trade_gap_hs4=exp_tradevalueus-imp_tradevalueus
+	bys hs4 QT_code: gen weight_gap_hs4=exp_altqtyunit-imp_altqtyunit
+	tab _merge trade_gap_hs4 if trade_gap_hs4==., missing
+	tab _merge weight_gap_hs4 if weight_gap_hs4==., missing
+	save "$onedrive/Mirror and desc stats/matched_comtrade2017_hs4QT.dta", replace
+	
+	restore
+	
 	collapse (sum) exp_netweightkg exp_altqtyunit exp_tradevalueus exp_unitprice_comtrade, by(hs4 QT_code)
 	sort hs4 QT_code
 	save "$exports_data/ExportsToPK_collapsehs4_QT.dta", replace
@@ -374,16 +402,18 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	
 	save "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT.dta", replace
 	
+
 ********************************************************************************
 * 								Data Visualization
 ********************************************************************************
 	
+*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    2017 & 2018    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 	use "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT.dta", clear
 
 	collapse (sum) trade_gap_hs4 weight_gap_hs4, by(hs4)
-	
-	
-*--------------------------- Graphs for Trade Gaps *---------------------------
+
+*--------------------------- Graphs for Trade Gaps ----------------------------
 
 	* Graph with 10 largest positive trade gaps
 	gsort -trade_gap_hs4
@@ -444,3 +474,72 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 				scheme(s1color)
 			
 	graph export "$intermediate_results/Graphs/weightgap2_comtrade_hs4_9_4.png", as(png) height(800) replace
+
+
+*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    2017 only    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+	use "$onedrive/Mirror and desc stats/matched_comtrade2017_hs4QT.dta", clear
+
+	collapse (sum) trade_gap_hs4 weight_gap_hs4, by(hs4)
+	
+*--------------------------- Graphs for Trade Gaps ----------------------------
+
+	* Graph with 10 largest positive trade gaps
+	gsort -trade_gap_hs4
+	
+	graph hbar trade_gap_hs4 in 1/10, ///
+				over(hs4, sort(1) descending) ///
+				title("Top 10 HS4 codes in 2017 with largest positive trade gaps" "between export and import comtrade data") ///
+				blabel(bar, position(outside) format(%16.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(645000000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
+	
+	graph export "$intermediate_results/Graphs/tradegap1_comtrade2017_hs4_9_4.png", as(png) height(800) replace
+
+	
+	* Graph with 10 largest negative trade gaps
+	gsort trade_gap_hs4
+	
+	graph hbar trade_gap_hs4 in 1/10, ///
+				over(hs4, sort(1)) ///
+				title("Top 10 HS4 codes in 2017 with largest negative trade gaps" "between export and import comtrade data") ///
+				blabel(bar, position(outside) format(%16.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
+
+	graph export "$intermediate_results/Graphs/tradegap2_comtrade2017_hs4_9_4.png", as(png) height(800) replace 
+				
+
+*--------------------------- Graphs for Weight Gaps ---------------------------
+
+	* Graph with 10 largest positive weight gaps
+	gsort -weight_gap_hs4
+	
+	graph hbar weight_gap_hs4 in 1/10, ///
+				over(hs4, sort(1) descending) ///
+				title("Top 10 HS4 codes in 2017 with largest positive weight gaps" "between export and import comtrade data") ///
+				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(1000000000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
+			
+	graph export "$intermediate_results/Graphs/weightgap1_comtrade2017_hs4_9_4.png", as(png) height(800) replace
+
+	* Graph with 10 largest negative weight gaps
+	gsort weight_gap_hs4
+	
+	graph hbar weight_gap_hs4 in 1/10, ///
+				over(hs4, sort(1)) ///
+				title("Top 10 HS4 codes in 2017 with largest negative weight gaps" "between export and import comtrade data") ///
+				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(-33000000000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
+			
+	graph export "$intermediate_results/Graphs/weightgap2_comtrade2017_hs4_9_4.png", as(png) height(800) replace

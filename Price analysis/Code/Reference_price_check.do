@@ -1135,7 +1135,6 @@
 	save "$intermediate_data/trade_gaps.dta", replace
 
 	use "$intermediate_data/check_prices_taxes.dta"
-	*keep if year==2017
 
 	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (mean) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
 	sort hs6
@@ -1183,3 +1182,42 @@
 								scheme(s1color)
 					
 	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_9_4.png", replace
+	
+*-------------------------------------------------------------------------------
+
+	use "$exports_data/ExportsToPK_clean.dta", clear
+	
+	drop if exp_year != 2017
+	collapse (sum) exp_netweightkg exp_altqtyunit exp_tradevalueus exp_unitprice_comtrade, by(hs6 QT_code)
+	sort hs6 QT_code
+	
+	save "$exports_data/ExportsToPK2017_collapsehs6_QT.dta", replace
+	
+	
+	use "$imports_data/ImportsToPK_clean.dta", clear
+	
+	drop if imp_year != 2017
+	collapse (sum) imp_netweightkg imp_altqtyunit imp_tradevalueus imp_unitprice_comtrade, by(hs6 QT_code)
+	sort hs6 QT_code
+	
+	save "$imports_data/ImportsToPK2017_collapsehs6_QT.dta", replace
+	
+	merge 1:1 hs6 QT_code using "$exports_data/ExportsToPK2017_collapsehs6_QT.dta"
+	* Matched: 4,382 | Not Matched: 1,871 (434 from imports, 1,437 from exports)
+	
+
+	
+	bys hs6 QT_code: gen trade_gap_HS6=exp_tradevalueus-imp_tradevalueus
+	bys hs6 QT_code: gen weight_gap_HS6=exp_altqtyunit-imp_altqtyunit
+	
+	collapse (sum) trade_gap_HS6 weight_gap_HS6, by(hs6)
+	
+	save "$onedrive/Mirror and desc stats/matched_comtrade_hs6QT.dta", replace
+	
+	
+	use "$intermediate_data/check_prices_taxes.dta", clear
+total_tax av_total_taxes sd_total_taxes
+	collapse (mean) total_tax av_total_taxes sd_total_taxes (sd) sd_total_taxes, by(hs6)
+	sort hs6
+	merge 1:1 hs6 using "$onedrive/Mirror and desc stats/matched_comtrade_hs6QT.dta", generate(merge3)
+	
