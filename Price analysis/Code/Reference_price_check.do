@@ -1136,7 +1136,7 @@
 
 	use "$intermediate_data/check_prices_taxes.dta"
 
-	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes sd`var'=`var', by(hs6)
+	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
 	sort hs6
 	merge 1:1 hs6 using "$intermediate_data/trade_gaps.dta"
 	gen logtrad=log(trade_gap_HS6)
@@ -1205,8 +1205,6 @@
 	merge 1:1 hs6 QT_code using "$exports_data/ExportsToPK2017_collapsehs6_QT.dta"
 	* Matched: 4,382 | Not Matched: 1,871 (434 from imports, 1,437 from exports)
 	
-
-	
 	bys hs6 QT_code: gen trade_gap_HS6=exp_tradevalueus-imp_tradevalueus
 	bys hs6 QT_code: gen weight_gap_HS6=exp_altqtyunit-imp_altqtyunit
 	
@@ -1216,8 +1214,7 @@
 	
 	
 	use "$intermediate_data/check_prices_taxes.dta", clear
-total_tax av_total_taxes sd_total_taxes
-	collapse (mean) total_tax av_total_taxes sd_total_taxes (sd) sd_total_taxes, by(hs6)
+	collapse (mean) total_taxes (first) av_total_taxes (sd) sd*, by(hs6)
 	sort hs6
 	merge 1:1 hs6 using "$onedrive/Mirror and desc stats/matched_comtrade_hs6QT.dta", generate(merge3)
 	
