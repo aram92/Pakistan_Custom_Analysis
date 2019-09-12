@@ -885,7 +885,7 @@
 	foreach var in `category_taxes' {
 		* Create means, SD by HS code
 		bys hs4 yearmonth : egen av_`var'= mean(`var')
-		bys hs6 yearmonth: egen sd_`var' = sd(`var')
+		bys hs6 yearmonth:  sd_`var' =`var'
 		gen dev`var'=`var'-av_`var'
 		
 		* Generate sum of absolute deviations from mean
@@ -1137,7 +1137,7 @@
 	use "$intermediate_data/check_prices_taxes.dta"
 	*keep if year==2017
 
-	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (mean) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
+	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
 	sort hs6
 	merge 1:1 hs6 using "$intermediate_data/trade_gaps.dta"
 	gen logtrad=log(trade_gap_HS6)
