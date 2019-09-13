@@ -885,7 +885,7 @@
 	foreach var in `category_taxes' {
 		* Create means, SD by HS code
 		bys hs4 yearmonth : egen av_`var'= mean(`var')
-		bys hs6 yearmonth:  sd_`var' =`var'
+		bys hs6 yearmonth:  gen sd_`var' =`var'
 		gen dev`var'=`var'-av_`var'
 		
 		* Generate sum of absolute deviations from mean
@@ -1190,7 +1190,7 @@
 	drop if exp_year != 2017
 	collapse (sum) exp_netweightkg exp_altqtyunit exp_tradevalueus exp_unitprice_comtrade, by(hs6 QT_code)
 	sort hs6 QT_code
-	
+	* This dataset has 5,819 observations
 	save "$exports_data/ExportsToPK2017_collapsehs6_QT.dta", replace
 	
 	
@@ -1199,7 +1199,7 @@
 	drop if imp_year != 2017
 	collapse (sum) imp_netweightkg imp_altqtyunit imp_tradevalueus imp_unitprice_comtrade, by(hs6 QT_code)
 	sort hs6 QT_code
-	
+	* This dataset has 4,816 observations
 	save "$imports_data/ImportsToPK2017_collapsehs6_QT.dta", replace
 	
 	merge 1:1 hs6 QT_code using "$exports_data/ExportsToPK2017_collapsehs6_QT.dta"
@@ -1217,4 +1217,5 @@
 	collapse (mean) total_taxes (first) av_total_taxes (sd) sd*, by(hs6)
 	sort hs6
 	merge 1:1 hs6 using "$onedrive/Mirror and desc stats/matched_comtrade_hs6QT.dta", generate(merge3)
-	
+		
+	save "$intermediate_data/preregression_9_13.dta", replace
