@@ -1219,3 +1219,81 @@
 	merge 1:1 hs6 using "$onedrive/Mirror and desc stats/matched_comtrade_hs6QT.dta", generate(merge3)
 		
 	save "$intermediate_data/preregression_9_13.dta", replace
+
+	
+/*-------------------------------------------------------------------------------
+	Analysis above repeated with HS4 instead of HS6
+*-------------------------------------------------------------------------------*/	
+
+	use "$exports_data/ExportsToPK_clean.dta", clear
+	
+	drop if exp_year != 2017
+	collapse (sum) exp_netweightkg exp_altqtyunit exp_tradevalueus exp_unitprice_comtrade, by(hs4 QT_code)
+	sort hs4 QT_code
+	* This dataset has 5,819 observations
+	save "$exports_data/ExportsToPK2017_collapsehs4_QT_9_16.dta", replace
+	
+	
+	use "$imports_data/ImportsToPK_clean.dta", clear
+	
+	drop if imp_year != 2017
+	collapse (sum) imp_netweightkg imp_altqtyunit imp_tradevalueus imp_unitprice_comtrade, by(hs4 QT_code)
+	sort hs4 QT_code
+	* This dataset has 4,816 observations
+	save "$imports_data/ImportsToPK2017_collapsehs4_QT_9_16.dta", replace
+	
+	merge 1:1 hs4 QT_code using "$exports_data/ExportsToPK2017_collapsehs4_QT_9_16.dta"
+	* Matched: 1,320 | Not Matched: 352 (101 from imports, 251 from exports)
+	
+	bys hs4 QT_code: gen trade_gap_HS4=exp_tradevalueus-imp_tradevalueus
+	bys hs4 QT_code: gen weight_gap_HS4=exp_altqtyunit-imp_altqtyunit
+	
+	collapse (sum) trade_gap_HS4 weight_gap_HS4, by(hs4)
+	
+	save "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT_9_16.dta", replace
+	
+	
+	use "$intermediate_data/check_prices_taxes.dta", clear
+	collapse (mean) total_taxes (first) av_total_taxes (sd) sd*, by(hs4)
+	sort hs4
+	merge 1:1 hs4 using "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT_9_16.dta", generate(merge3)
+	* Matched: 1,154 | Not Matched: 55 (4 from check_prices_taxes, 51 from matched_comtrade_hs4QT_9_16)
+	
+	gen hs2=int(hs4/100)
+	
+	save "$intermediate_data/preregression_9_16.dta", replace
+
+	
+	eststo clear
+	reghdfe trade_gap_HS4 total_taxes av_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_tradegapHS4
+	reghdfe trade_gap_HS4 total_taxes av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_tradegapHS4_sd
+	reghdfe weight_gap_HS4 total_taxes av_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_weightgapHS4
+	reghdfe weight_gap_HS4 total_taxes av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_weightgapHS4_sd
+	
+
+	esttab reg_tradegapHS4 reg_tradegapHS4_sd reg_weightgapHS4 reg_weightgapHS4_sd using ///
+			"$intermediate_results/Tables/DeterminantsofGap_CHECK_9_17.rtf", ///
+				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
+				replace nobaselevels style(tex)
+				
+	coefplot reg_tradegapHS4, bylabel(DV: Trade Gap) || ///
+				reg_tradegapHS4_sd, bylabel(DV: Trade Gap) ||, ///
+								byopts(xrescale) xline(0)  ///
+								mlabel format(%14.3fc) mlabposition(2) ///
+								mlabgap(*2) bgcolor(white) ///
+								graphregion(fcolor(white)) grid(none) ///
+								scheme(s1color)
+	quietly graph export "$intermediate_results/Graphs/TradeGap_DeterminantsofGap_9_17.png", replace
+	
+	coefplot reg_weightgapHS4, bylabel(DV: Weight Gap) || ///
+				reg_weightgapHS4_sd, bylabel(DV: Weight Gap) ||, byopts(xrescale) ///
+								xline(0) mlabel format(%14.3fc) mlabposition(2) ///
+								mlabgap(*2) bgcolor(white) ///
+								graphregion(fcolor(white)) grid(none) ///
+								scheme(s1color)
+					
+	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_9_17.png", replace
