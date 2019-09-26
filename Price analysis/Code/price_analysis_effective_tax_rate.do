@@ -258,7 +258,7 @@
 				 hs2 == 30
          
 	* Generate hs6 code:
-	gen hs6=int(hs_code*100)
+	gen hs6=hs_code*100
 	label variable hs6 "HS6 code"
 	
 	*generate yearmonth

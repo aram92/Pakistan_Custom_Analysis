@@ -255,10 +255,6 @@
 				 hs2 == 88 | ///
 				 hs2 == 90 | ///
 				 hs2 == 30
-         
-	* Generate hs6 code:
-	gen hs6=int(hs_code*100)
-	label variable hs6 "HS6 code"
 	
 	*generate yearmonth
 	gen yearmonth=ym(year,month)
@@ -327,24 +323,24 @@
 	gen unit_price_USD=log(imports_USD/quantity)
 
 	* Create mean by HS_Code and yearmonth
-	bys hs6 yearmonth: egen av_unitprice=mean(unit_price_USD)
+	bys hs4 yearmonth: egen av_unitprice=mean(unit_price_USD)
 		
 	* Create standard deviation by HS_code
-	bys hs6 yearmonth: egen sd_unitprice= sd(unit_price_USD)
+	bys hs4 yearmonth: egen sd_unitprice= sd(unit_price_USD)
 
 	* Create standard error by HS_code
-	by  hs6 yearmonth: gen se_unitprice=sd_unitprice/sqrt(_N)
+	by  hs4 yearmonth: gen se_unitprice=sd_unitprice/sqrt(_N)
 
 	* Create lower bound for CI by HS_code using 3SD
-	bys  hs6 yearmonth: gen low_3sd=av_unitprice-3*sd_unitprice
+	bys  hs4 yearmonth: gen low_3sd=av_unitprice-3*sd_unitprice
 
 	* Create upper bound for CI by HS_code using 3SD
-	bys hs6 yearmonth: gen up_3sd=av_unitprice+3*sd_unitprice
+	bys hs4 yearmonth: gen up_3sd=av_unitprice+3*sd_unitprice
 
-	* create deviation per hs6 and yearmonth
-	bys hs6 yearmonth: gen dev= unit_price_USD-av_unitprice
-	bys hs6 yearmonth: gen abs_dev= abs(unit_price_USD-av_unitprice)
-  sort hs6 year co QT_code
+	* create deviation per hs4 and yearmonth
+	bys hs4 yearmonth: gen dev= unit_price_USD-av_unitprice
+	bys hs4 yearmonth: gen abs_dev= abs(unit_price_USD-av_unitprice)
+  sort hs4 year co QT_code
   save "$intermediate_data/check_prices.dta", replace
 	
 	
@@ -489,21 +485,21 @@
 	replace QT_code="Number of items" if qtyunit==""
 
 	
-	* Generate hs6 and hs2 code:
-	gen hs6 = int(commoditycode)
-	label variable hs6 "HS6 code"
-	gen hs2=int(hs6/10000)
+	* Generate hs4 and hs2 code:
+	gen hs4 = int(commoditycode/100)
+	label variable hs4 "HS4 code"
+	gen hs2=int(hs4/100)
 
 	gen unit_price_comtrade=log(tradevalueus/altqtyunit)
 	gen sdu_price=unit_price_comtrade
 	
-	collapse (sum) netweightkg altqtyunit tradevalueus (mean) unit_price_comtrade (sd) sdu_price, by(hs6 year co QT_code)
-	*drop if hs6==. | QT_code=="" | co==""
-	sort hs6 year co QT_code
-	save "$exports_data/ExportsToPK_collapsehs6_co.dta", replace
+	collapse (sum) netweightkg altqtyunit tradevalueus (mean) unit_price_comtrade (sd) sdu_price, by(hs4 year co QT_code)
+	*drop if hs4==. | QT_code=="" | co==""
+	sort hs4 year co QT_code
+	save "$exports_data/ExportsToPK_collapsehs4_co.dta", replace
 	
 	* Merge
-	merge 1:m hs6 year co QT_code using "$intermediate_data/check_prices.dta", generate(merge2)
+	merge 1:m hs4 year co QT_code using "$intermediate_data/check_prices.dta", generate(merge2)
   
   * We create the log variables for the regression
 	gen logimpUSD=log(imports_USD)
@@ -520,10 +516,10 @@
 	gen abs_dev2=abs(unit_price_USD-unit_price_comtrade)
 	
 	* Harmonizing post-merge HS2 values
-	replace hs2=int(hs6/10000)
+	replace hs2=int(hs4/100)
 	
 	* Generate frequency distribution tables to see the distribution of unmatched data from the merge
-	asdoc tab1 year shed_code hs2 co_code if merge2==2, replace label save(Price_check_Freq_Dist_8_26.rtf)
+	asdoc tab1 year shed_code hs2 co_code if merge2==2, replace label save(Price_check_Freq_Dist_9_25.rtf)
 
 	save "$intermediate_data/Price_check_graphs.dta", replace
 
@@ -540,7 +536,7 @@
 	eststo m2
 	*"% Deviation from the mean"
 
-	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_8_26_final.rtf", label r2 ar2 ///
+	esttab m1 m2 using "$intermediate_results/Tables/Check_deteriminants_prices_9_25_final.rtf", label r2 ar2 ///
 	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) ///
 				 title ("Determinants of prices and deviations from the average price")			 
 
@@ -575,7 +571,7 @@
 	eststo m4
 	*"% Deviation from the mean"
 
-	esttab m3 m4 using "$intermediate_results/Tables/Check_deteriminants_prices_8_26_final_NoHS2Co.rtf", label r2 ar2 ///
+	esttab m3 m4 using "$intermediate_results/Tables/Check_deteriminants_prices_9_25_final_NoHS2Co.rtf", label r2 ar2 ///
 	             se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex) ///
 				 title ("Determinants of prices and deviations from the average price (w/o hs2 & co)")			 
 	 
@@ -610,12 +606,12 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_outliers_3sd_predrop_9_25.pdf", replace
 
 	preserve
 	
-	* Drop HS6 code for which number of observations are under 30
-	bys hs6 yearmonth: drop if _N<30
+	* Drop HS4 code for which number of observations are under 30
+	bys hs4 yearmonth: drop if _N<30
 	* The above command deletes 272,488 observations
 	
 	* Graph of distribution of outliers after dropping observations
@@ -629,7 +625,7 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_postdrop_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_postdrop_9_25.pdf", replace
 	
 	restore
 	
@@ -644,8 +640,8 @@
 		
 //----
 	
-	*collapse per hs6 shed_name yearmonth and origin country: count to have the number of outliers, sum of absolute deviation)
-*	collapse (sum) abs_dev2 (count) outliers_3sd, by(hs6 shed_name yearmonth co) 
+	*collapse per hs4 shed_name yearmonth and origin country: count to have the number of outliers, sum of absolute deviation)
+*	collapse (sum) abs_dev2 (count) outliers_3sd, by(hs4 shed_name yearmonth co) 
 	
 	preserve
 	
@@ -661,7 +657,7 @@
 			xsize(6) ///
 			scheme(s1color)
 				
- graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_8_26.pdf", replace
+ graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_9_25.pdf", replace
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
 	
@@ -676,7 +672,7 @@
 			xsize(6) ///
 			scheme(s1color)
 
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_9_25.pdf", replace
 	restore
 	
 	
@@ -701,7 +697,7 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_shed_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_shed_9_25.pdf", replace
 	
   gsort - abs_dev2
 	* Graph top 10 Sheds by sum of deviation 
@@ -715,7 +711,7 @@
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_absdev_shed_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/Price_absdev_shed_9_25.pdf", replace
 	
 	restore
 	
@@ -736,7 +732,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_co_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_co_9_25.pdf", replace
 	
 	gsort -abs_dev2
 		
@@ -750,7 +746,7 @@
 			ylabel(, nogrid) ///
 			scheme(s1color)
        
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_co_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_co_9_25.pdf", replace
 	restore
 
 				*------------- BAR PLOTS BY HS2 CODE -------------*
@@ -772,7 +768,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2_9_25.pdf", replace
 	
 	
 	gsort -abs_dev2
@@ -786,7 +782,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2_9_25.pdf", replace
 	
 	restore
 	
@@ -807,7 +803,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2gap_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2gap_9_25.pdf", replace
 		
 	
 	gsort -abs_dev2
@@ -821,7 +817,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2gap_8_26.pdf", replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2gap_9_25.pdf", replace
 		
 	restore
 
@@ -880,17 +876,17 @@
 	drop if year!=2017
 	
 //----
-	* Loop to create outlier variables for each of the categories
+	* Loop to create averages and standard deviations for each of the categories
 	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
 	foreach var in `category_taxes' {
 		* Create means, SD by HS code
-		bys hs4 yearmonth : egen av_`var'= mean(`var')
-		bys hs6 yearmonth:  gen sd_`var' =`var'
+		bys hs4 yearmonth: egen av_`var'= mean(`var')
+		bys hs_code yearmonth:  gen sd_`var' =`var'
 		gen dev`var'=`var'-av_`var'
 		
 		* Generate sum of absolute deviations from mean
 		bys hs_code: gen per_dev_`var'=(`var' - av_`var')/av_`var'
-		bys year month: egen dev_`var' = sum(abs(per_dev_`var'))
+		bys yearmonth: egen dev_`var' = sum(abs(per_dev_`var'))
 	}
 
 	
@@ -899,10 +895,6 @@
 	
 **********************Revenue loss estimation using previously calculated trade gaps:
 	use "$imports_data\imports_2017_2018.full.dta", clear
-
-	* Generate hs6 code:
-	gen hs6=int(hs_code*100)
-	label variable hs6 "HS6 code"
 
 	
 	gen QT_code="Number of items"
@@ -928,7 +920,7 @@
 				if shed_name=="SOUTH ASIA PAKISTAN TERMINALS"
 	replace shed_name="Peshawar Torkham" if shed_name=="PESHAWAR TORKHAM"
 	 
-	collapse (sum) import_export_value_rs declaredimportvalue netweight quantity,by(hs6 QT_code date co)
+	collapse (sum) import_export_value_rs declaredimportvalue netweight quantity,by(hs4 QT_code date co)
 	gen month=month(date)
 	gen year=year(date)
 	save "$imports_data/imports_yearcollapsed.full.dta", replace
@@ -942,8 +934,8 @@
 	save "$imports_data/imports_yearcollapsed.full.dta", replace
 
 	preserve
-	collapse (sum) imports_USD declaredimportvalue netweigh quantity, by(hs6 QT_code)
-	save "$imports_data/imports_yearcollapsedhs6_all.dta", replace
+	collapse (sum) imports_USD declaredimportvalue netweigh quantity, by(hs4 QT_code)
+	save "$imports_data/imports_yearcollapsedhs4_all.dta", replace
 	restore
 
 	 * use comtrade data
@@ -1082,23 +1074,24 @@
 	replace QT_code="Number of items" if qtyunit==""
 
 	
-	* Generate hs6 and hs2 code:
-	gen hs6 = int(commoditycode)
-	label variable hs6 "HS6 code"
-	gen hs2=int(hs6/10000)
+	* Generate hs4 and hs2 code:
+	
+	gen hs4 = int(commoditycode/100)
+	label variable hs4 "HS4 code"
+	gen hs2=int(hs4/100)
 	
 	preserve 
 	drop if year != 2017 	//40,313 observations deleted
-	collapse (sum) netweightkg altqtyunit tradevalueus, by(hs6 QT_code)
-	sort hs6 QT_code
-	save "$exports_data/ExportsToPK_collapsehs6.dta", replace
+	collapse (sum) netweightkg altqtyunit tradevalueus, by(hs4 QT_code)
+	sort hs4 QT_code
+	save "$exports_data/ExportsToPK_collapsehs4.dta", replace
 	restore
 
-	* Sum stats per hs6 : @Alice since ExportsToPK_collapsehs6 doesn't have co, I've skipped it from the merge command
-	use "$imports_data/imports_yearcollapsedhs6_all.dta", clear
-	sort hs6 QT_code 
-	merge 1:1 hs6 QT_code using "$exports_data/ExportsToPK_collapsehs6.dta"
-	save "$onedrive/Mirror and desc stats/matched_hs6.dta", replace
+	* Sum stats per hs4 : @Alice since ExportsToPK_collapsehs4 doesn't have co, I've skipped it from the merge command
+	use "$imports_data/imports_yearcollapsedhs4_all.dta", clear
+	sort hs4 QT_code 
+	merge 1:1 hs4 QT_code using "$exports_data/ExportsToPK_collapsehs4.dta"
+	save "$onedrive/Mirror and desc stats/matched_hs4.dta", replace
 
 	replace tradevalueus =0 if tradevalueus ==.
 	replace imports_USD=0 if imports_USD==.
@@ -1106,11 +1099,11 @@
 	replace netweightkg =0 if netweightkg ==.
 	replace  quantity =0 if  quantity ==.
 
-	bys hs6 QT_code : gen trade_gap_HS6=tradevalueus-imports_USD
-	bys hs6 QT_code : gen weight_gap_HS6=altqtyunit-quantity
+	bys hs4 QT_code : gen trade_gap_HS4=tradevalueus-imports_USD
+	bys hs4 QT_code : gen weight_gap_HS4=altqtyunit-quantity
 
-	collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS6 altqtyunit quantity, by(hs6 QT_code)
-	gen hs2=int(hs6/10000)
+	collapse (sum) tradevalueus imports_USD trade_gap_HS4 weight_gap_HS4 altqtyunit quantity, by(hs4 QT_code)
+	gen hs2=int(hs4/100)
 	gen tenpercciffob=tradevalueus*0.15
 	gen allowedgap=imports_USD*0.15
 
@@ -1130,38 +1123,38 @@
 	replace hs2_names="Transportation" if hs2>=86 & hs2<90
 	replace hs2_names="Misc." if hs2>=90
 
-	collapse (sum) tradevalueus imports_USD trade_gap_HS6 weight_gap_HS6 altqtyunit quantity, by(hs6)
-	sort hs6 
+	collapse (sum) tradevalueus imports_USD trade_gap_HS4 weight_gap_HS4 altqtyunit quantity, by(hs4)
+	sort hs4
 	save "$intermediate_data/trade_gaps.dta", replace
 
 	use "$intermediate_data/check_prices_taxes.dta"
 
-	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
-	sort hs6
-	merge 1:1 hs6 using "$intermediate_data/trade_gaps.dta"
-	gen logtrad=log(trade_gap_HS6)
+	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs4)
+	sort hs4
+	merge 1:1 hs4 using "$intermediate_data/trade_gaps.dta"
+	gen logtrad=log(trade_gap_HS4)
 	gen logavtaxes=log(av_total_taxes)
 	gen logtotaltaxes=log(total_taxes)
 	gen logsdtaxes=log(sd_total_taxes)
 
-	gen hs2=int(hs6/10000)
+	gen hs2=int(hs4/100)
 	
 	save "$intermediate_data/check_prices_gap_preregression.dta", replace
 	
 	eststo clear
-	reghdfe trade_gap_HS6 total_tax av_total_taxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_HS4 total_tax av_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_trade_gap1
-	reghdfe trade_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_HS4 total_tax av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_trade_gap2
-	reghdfe weight_gap_HS6 total_tax av_total_taxes, vce(cluster hs2) noabsorb
-	eststo reg_weightgap_HS6_1
-	reghdfe weight_gap_HS6 total_tax av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
-	eststo reg_weightgap_HS6_2
+	reghdfe weight_gap_HS4 total_tax av_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_weightgap_HS4_1
+	reghdfe weight_gap_HS4 total_tax av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_weightgap_HS4_2
 	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
 	eststo reg_logtrad
 
-	esttab reg_trade_gap1 reg_trade_gap2 reg_weightgap_HS6_1 reg_weightgap_HS6_2 reg_logtrad using ///
-			"$intermediate_results/Tables/DeterminantsofGap_CHECK_9_4.rtf", ///
+	esttab reg_trade_gap1 reg_trade_gap2 reg_weightgap_HS4_1 reg_weightgap_HS4_2 reg_logtrad using ///
+			"$intermediate_results/Tables/DeterminantsofGap_CHECK_9_25.rtf", ///
 				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
 				replace nobaselevels style(tex)
 				
@@ -1172,17 +1165,24 @@
 								mlabgap(*2) bgcolor(white) ///
 								graphregion(fcolor(white)) grid(none) ///
 								scheme(s1color)
-	quietly graph export "$intermediate_results/Graphs/TradeGap_DeterminantsofGap_9_4.png", replace
+	quietly graph export "$intermediate_results/Graphs/TradeGap_DeterminantsofGap_9_25.png", replace
 	
-	coefplot reg_weightgap_HS6_1, bylabel(DV: Weight Gap) || ///
+	coefplot reg_weightgap_HS4_1, bylabel(DV: Weight Gap) || ///
 				reg_trade_gap2, bylabel(DV: Weight Gap) ||, byopts(xrescale) ///
 								xline(0) mlabel format(%14.3fc) mlabposition(2) ///
 								mlabgap(*2) bgcolor(white) ///
 								graphregion(fcolor(white)) grid(none) ///
 								scheme(s1color)
 					
-	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_9_4.png", replace
+	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_9_25.png", replace
+
 	
+	
+	
+*-------------------------------------------------------------------------------	
+*-------------------------------------------------------------------------------
+* 								COMTRADE-COMTRADE ANALYSIS
+*-------------------------------------------------------------------------------
 *-------------------------------------------------------------------------------
 
 	use "$exports_data/ExportsToPK_clean.dta", clear
@@ -1200,8 +1200,8 @@
 	collapse (sum) imp_netweightkg imp_altqtyunit imp_tradevalueus imp_unitprice_comtrade, by(hs6 QT_code)
 	sort hs6 QT_code
 	* This dataset has 4,816 observations
-	save "$imports_data/ImportsToPK2017_collapsehs6_QT.dta", replace
-	
+		save "$imports_data/ImportsToPK2017_collapsehs6_QT.dta", replace
+
 	merge 1:1 hs6 QT_code using "$exports_data/ExportsToPK2017_collapsehs6_QT.dta"
 	* Matched: 4,382 | Not Matched: 1,871 (434 from imports, 1,437 from exports)
 	
@@ -1214,6 +1214,8 @@
 	
 	
 	use "$intermediate_data/check_prices_taxes.dta", clear
+	drop hs6
+	gen hs6 = hs_code
 	collapse (mean) total_taxes (first) av_total_taxes (sd) sd*, by(hs6)
 	sort hs6
 	merge 1:1 hs6 using "$onedrive/Mirror and desc stats/matched_comtrade_hs6QT.dta", generate(merge3)
