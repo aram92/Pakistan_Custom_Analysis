@@ -188,7 +188,7 @@
 
 	
 	* Generate hs6 and hs2 code:
-	gen hs6 = imp_commoditycode*100
+	gen hs6 = imp_commoditycode
 	label variable hs6 "HS6 code"
 	gen hs4=int(hs6/100)
 	label variable hs4 "HS4 code"
@@ -352,7 +352,7 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 
 	
 	* Generate hs6 and hs2 code:
-	gen hs6 = exp_commoditycode*100
+	gen hs6 = exp_commoditycode
 	label variable hs6 "HS6 code"
 	gen hs4=int(hs6/100)
 	label variable hs4 "HS4 code"
