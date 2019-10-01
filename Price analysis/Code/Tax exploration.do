@@ -1,6 +1,9 @@
 	use "$intermediate_data/Price_data_2907.dta", clear 
 	* Create the three categories required as a percent of original price
 
+	*drop if year != 2017 //Optional
+	
+	
 	* Custom Duty
 	egen cust_duty_levies_temp=rowtotal(customsduty federalexciseduty petrloeumlevy)
 	gen cust_duty_levies = ((cust_duty_levies_temp/USDollar)/imports_USD)*100
@@ -59,6 +62,10 @@
 		count if `var' !=. & `var' !=0
 	}
 	
+	
+	import delimited "$intermediate_data/tax_declaration_2017.csv", clear //or suffix _2017_2018
+	gsort -pct_declared
+
 	gen flag = 0
 	replace flag = 1 if tax_variable=="cust_duty_levies" | ///
 				tax_variable=="taxes" | ///
@@ -69,10 +76,6 @@
 				tax_variable=="decl_extra_taxes"| ///
 				tax_variable=="decl_total"
 	
-	
-	import delimited "$intermediate_data/tax_declaration.csv", clear
-	gsort -pct_declared
-	
 	graph hbar pct_declared if flag==0, over(tax_variable, sort(1) descending) ///
 			title("Percentage of goods declared, by tax type") ///
 			blabel(bar, position(outside) format(%9.5fc) color(black)) ///
@@ -81,7 +84,7 @@
 			ylabel(, nogrid labsize(tiny)) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/TaxExploration1.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/TaxDeclaration1_2017.png", as(png) height(800) replace
 
 
 	graph hbar (sum) pct_declared if flag==1, over(tax_variable, sort(1) descending) ///
@@ -92,16 +95,40 @@
 			ylabel(, nogrid) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/TaxExploration2.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/TaxDeclaration2_2017.png", as(png) height(800) replace
 
 ********************************************************************************	
 ********************************************************************************	
 ********************************************************************************	
-	
-	
-	
 	
 	import delimited "$onedrive/Imports/hs6_check.csv", clear
 	drop v1
 
-	merge 1:1 gd_no_id gd_date ntnid shed_name using "$intermediate_data/Price_data_2907.dta"
+	gen hs4 = int(hs6/100)
+	
+	
+	merge 1:1 gd_no_id gd_date ntnid agentid hs4 shippinglinename last_channel grossweight netweight quantity using "$intermediate_data/Price_data_2907.dta", gen(merge2)
+
+	merge 1:1 gd_no_id gd_date ntnid quantity using "$intermediate_data/Price_data_2907.dta", gen(merge3)
+
+	
+	duplicates tag gd_no_id gd_date ntnid agentid hs4 shippinglinename last_channel grossweight netweight, gen(duplicate)
+	br if duplicate>0
+	
+/* 	These variables are different:
+		declared description
+		quantity
+		declaredimportvalue
+		import_export_value_rs
+*/
+
+
+	import delimited "$onedrive/Imports/PAK_rawdata.csv", clear bindquote(strict) maxquotedrows(1000)
+	save "$intermediate_data/Price_data_10_1.dta", replace
+	
+	gen date=date(gd_date, "DMYhm")
+	gen year=year(date)
+	replace origin_country=strtrim(origin_country)
+	gen co=origin_country
+	
+* This needs to be continued further based on Merge_dataset.do

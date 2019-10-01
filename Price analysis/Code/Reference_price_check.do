@@ -1172,13 +1172,13 @@
 	use "$intermediate_data/check_prices_gap_preregression.dta", clear
 	
 	eststo clear
-	reghdfe trade_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_HS4 av_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_trade_gap_log1
-	reghdfe trade_gap_HS4 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_HS4 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_trade_gap_log2
-	reghdfe weight_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_HS4 av_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_weight_gap_log1
-	reghdfe weight_gap_HS4 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_HS4 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_weight_gap_log2
 	
 	reghdfe trade_gap_HS4 total_tax av_total_taxes, vce(cluster hs2) noabsorb
@@ -1193,12 +1193,12 @@
 	eststo reg_logtrad
 
 	esttab reg_trade_gap_log1 reg_trade_gap_log2 reg_weight_gap_log1 reg_weight_gap_log2 using ///
-			"$intermediate_results/Tables/DeterminantsofGapNEW_FBRComtrade_9_30.rtf", ///
+			"$intermediate_results/Tables/DeterminantsofGapNEW_FBRComtrade_10_1.rtf", ///
 				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
 				replace nobaselevels style(tex)
 				
 	esttab reg_trade_gap1 reg_trade_gap2 reg_weightgap_HS4_1 reg_weightgap_HS4_2 reg_logtrad using ///
-			"$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_9_30.rtf", ///
+			"$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_10_1.rtf", ///
 				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
 				replace nobaselevels style(tex)
 				
@@ -1282,7 +1282,7 @@
 	gen logavtaxes=log(av_total_taxes)
 	gen logsdtaxes=log(sd_total_taxes)
 	
-	save "$intermediate_data/preregression_9_30.dta", replace
+	save "$intermediate_data/preregression_10_1.dta", replace
 
 	
 	eststo clear
@@ -1306,12 +1306,12 @@
 	eststo reg_weightgapHS4_sd
 	
 	esttab reg_tradegap_log1 reg_tradegap_log2 reg_weightgap_log1 reg_weightgap_log2 using ///
-			"$intermediate_results/Tables/DeterminantsofGapNEW_ComtradeOnly_9_30.rtf", ///
+			"$intermediate_results/Tables/DeterminantsofGapNEW_ComtradeOnly_10_1.rtf", ///
 				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
 				replace nobaselevels style(tex)
 
 	esttab reg_tradegapHS4 reg_tradegapHS4_sd reg_weightgapHS4 reg_weightgapHS4_sd using ///
-			"$intermediate_results/Tables/DeterminantsofGap_ComtradeOnly_9_30.rtf", ///
+			"$intermediate_results/Tables/DeterminantsofGap_ComtradeOnly_10_1.rtf", ///
 				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
 				replace nobaselevels style(tex)
 				

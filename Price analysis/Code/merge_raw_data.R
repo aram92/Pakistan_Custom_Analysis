@@ -28,13 +28,20 @@ rm(import1, import2, import3)
 
 sum(is.na(all_import$HS_Code))
 sum(is.na(all_import$Quantity_Unit_Code))
+sum(is.na(all_import$Last_Channel))
+sum(is.na(all_import$GrossWeight))
+sum(is.na(all_import$NetWeight))
+sum(is.na(all_import$Quantity))
+
 
 all_import$hs6 <- as.integer(all_import$HS_Code*100)
 
-keep_vars <- c("GD_NO_ID", "GD_Date", "ntnid", "Shed_Name", "hs6")
+keep_vars <- c("GD_NO_ID", "GD_Date", "ntnid", "Agent.id", "Shed_Name", "Shipping.line.name", 
+               "Last_Channel", "GrossWeight", "NetWeight", "Quantity", "hs6")
 all_import1 = all_import[keep_vars]
 
 write.csv(all_import1, file = "C:/Users/wb554990/OneDrive - WBG/Pakistan Custom Data Analysis/Imports/hs6_check.csv")
 
-#library(foreign)
-#write.dta(all_import, "C:/Users/wb554990/OneDrive - WBG/Pakistan Custom Data Analysis/Imports/merged_import.dta")
+
+library(foreign)
+write.dta(all_import, "C:/Users/wb554990/OneDrive - WBG/Pakistan Custom Data Analysis/Imports/PAK_rawdata.dta")
