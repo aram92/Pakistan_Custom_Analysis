@@ -98,8 +98,9 @@
 	global imports_data				"$onedrive/Imports"
 	global exports_data				"$onedrive/ExportsToPK_comtrade"
 
-	* Upload the most recent data set 
+	* Upload the most recent data set
 	use "$intermediate_data/Price_data_2907.dta", clear 
+
 
 * ---------------------------------------------------------------------------- *
 * Data Cleaning
@@ -1102,6 +1103,7 @@
 	bys hs4 QT_code : gen trade_gap_HS4=tradevalueus-imports_USD
 	bys hs4 QT_code : gen weight_gap_HS4=altqtyunit-quantity
 
+	
 	collapse (sum) tradevalueus imports_USD trade_gap_HS4 weight_gap_HS4 altqtyunit quantity, by(hs4 QT_code)
 	gen hs2=int(hs4/100)
 	gen tenpercciffob=tradevalueus*0.15
@@ -1132,6 +1134,7 @@
 	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs4)
 	sort hs4
 	merge 1:1 hs4 using "$intermediate_data/trade_gaps.dta"
+	
 	gen logtrad=log(trade_gap_HS4)
 	gen logavtaxes=log(av_total_taxes)
 	gen logtotaltaxes=log(total_taxes)
@@ -1139,7 +1142,34 @@
 
 	gen hs2=int(hs4/100)
 	
+	gen av_effective_tax = float(av_total_taxes/100)
+	bys hs4: gen lossUSD = av_effective_tax*trade_gap_HS4	
+	
 	save "$intermediate_data/check_prices_gap_preregression.dta", replace
+	
+*-------------------------------------------------------------------------------	
+
+	collapse (sum) lossUSD, by(hs2)
+	
+	* Graph top 10 HS2 codes with most tax lost
+	gsort -lossUSD
+
+	graph hbar lossUSD in 1/10, ///
+				over(hs2, sort(1) descending) ///
+				title("Top 10 HS2 codes with most tax revenue losses due to trade gaps") ///
+				subtitle("(U.S. Dollars)") ///
+				blabel(bar, position(outside) format(%15.0fc) color(black)) ///
+				ytitle("") ///
+				yscale(range(16500000) off) ///
+				ylabel(, nogrid) ///
+				scheme(s1color)
+	
+	graph export "$intermediate_results/Graphs/TaxLoss_TradeGap_HS4-HS2_10_1.png", as(png) height(800) replace
+	
+
+*-------------------------------------------------------------------------------	
+	
+	use "$intermediate_data/check_prices_gap_preregression.dta", clear
 	
 	eststo clear
 	reghdfe trade_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
@@ -1231,7 +1261,8 @@
 
 	bys hs4 QT_code: gen trade_gap_HS4=exp_tradevalueus-imp_tradevalueus
 	bys hs4 QT_code: gen weight_gap_HS4=exp_altqtyunit-imp_altqtyunit
-	
+
+			
 	collapse (sum) trade_gap_HS4 weight_gap_HS4, by(hs4)
 	
 	save "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT_9_30.dta", replace
@@ -1245,6 +1276,9 @@
 	
 	gen hs2=int(hs4/100)
 
+	gen av_effective_tax = float(av_total_taxes/100)
+	gen lossUSD = av_effective_tax*trade_gap_HS4
+	
 	gen logavtaxes=log(av_total_taxes)
 	gen logsdtaxes=log(sd_total_taxes)
 	
@@ -1252,13 +1286,13 @@
 
 	
 	eststo clear
-	reghdfe trade_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_HS4 av_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_tradegap_log1
-	reghdfe trade_gap_HS4 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_HS4 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_tradegap_log2
-	reghdfe weight_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_HS4 av_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_weightgap_log1
-	reghdfe weight_gap_HS4 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_HS4 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_weightgap_log2
 	
 	
@@ -1298,4 +1332,3 @@
 								scheme(s1color)
 					
 	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_ComtradeOnly_9_30.png", replace
-	

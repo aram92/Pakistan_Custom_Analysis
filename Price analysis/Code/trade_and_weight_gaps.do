@@ -378,6 +378,10 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	
 	bys hs4 QT_code: gen trade_gap_hs4=exp_tradevalueus-imp_tradevalueus
 	bys hs4 QT_code: gen weight_gap_hs4=exp_altqtyunit-imp_altqtyunit
+	
+	gen av_effective_tax = float(av_total_taxes/100)
+	gen lossUSD = av_effective_tax*trade_gap_hs4
+	
 	tab _merge trade_gap_hs4 if trade_gap_hs4==., missing
 	tab _merge weight_gap_hs4 if weight_gap_hs4==., missing
 	save "$onedrive/Mirror and desc stats/matched_comtrade2017_hs4QT.dta", replace
@@ -403,6 +407,9 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	
 	bys hs4 QT_code: gen trade_gap_hs4=exp_tradevalueus-imp_tradevalueus       
 	bys hs4 QT_code: gen weight_gap_hs4=exp_altqtyunit-imp_altqtyunit
+	
+	gen av_effective_tax = float(av_total_taxes/100)
+	gen lossUSD = av_effective_tax*trade_gap_hs4	
 	
 	save "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT.dta", replace
 	

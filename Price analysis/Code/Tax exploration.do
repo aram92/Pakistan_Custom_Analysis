@@ -59,4 +59,49 @@
 		count if `var' !=. & `var' !=0
 	}
 	
+	gen flag = 0
+	replace flag = 1 if tax_variable=="cust_duty_levies" | ///
+				tax_variable=="taxes" | ///
+				tax_variable=="extra_taxes" | ///
+				tax_variable=="total_taxes" | ///
+				tax_variable=="decl_cust" | ///
+				tax_variable=="decl_taxes" | ///
+				tax_variable=="decl_extra_taxes"| ///
+				tax_variable=="decl_total"
 	
+	
+	import delimited "$intermediate_data/tax_declaration.csv", clear
+	gsort -pct_declared
+	
+	graph hbar pct_declared if flag==0, over(tax_variable, sort(1) descending) ///
+			title("Percentage of goods declared, by tax type") ///
+			blabel(bar, position(outside) format(%9.5fc) color(black)) ///
+			ytitle("") ///
+			yscale(range(110) off) ///
+			ylabel(, nogrid labsize(tiny)) ///
+			scheme(s1color)
+	
+	graph export "$intermediate_results/Graphs/TaxExploration1.png", as(png) height(800) replace
+
+
+	graph hbar (sum) pct_declared if flag==1, over(tax_variable, sort(1) descending) ///
+			title("Percentage of goods declared, by tax category") ///
+			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
+			ytitle("") ///
+			yscale(range(110) off) ///
+			ylabel(, nogrid) ///
+			scheme(s1color)
+	
+	graph export "$intermediate_results/Graphs/TaxExploration2.png", as(png) height(800) replace
+
+********************************************************************************	
+********************************************************************************	
+********************************************************************************	
+	
+	
+	
+	
+	import delimited "$onedrive/Imports/hs6_check.csv", clear
+	drop v1
+
+	merge 1:1 gd_no_id gd_date ntnid shed_name using "$intermediate_data/Price_data_2907.dta"
