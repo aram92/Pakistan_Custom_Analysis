@@ -371,6 +371,11 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	
 	merge 1:1 hs4 QT_code using "$imports_data/ImportsToPK2017_collapsehs4_QT.dta"
 	
+	replace exp_tradevalueus = 0 if exp_tradevalueus==.
+	replace imp_tradevalueus = 0 if imp_tradevalueus==.
+	replace exp_altqtyunit = 0 if exp_altqtyunit==.
+	replace imp_altqtyunit = 0 if imp_altqtyunit==.
+	
 	bys hs4 QT_code: gen trade_gap_hs4=exp_tradevalueus-imp_tradevalueus
 	bys hs4 QT_code: gen weight_gap_hs4=exp_altqtyunit-imp_altqtyunit
 	tab _merge trade_gap_hs4 if trade_gap_hs4==., missing
@@ -391,14 +396,13 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 		imports comtrade data.
 	*/
 	
+	replace exp_tradevalueus = 0 if exp_tradevalueus==.
+	replace imp_tradevalueus = 0 if imp_tradevalueus==.
+	replace exp_altqtyunit = 0 if exp_altqtyunit==.
+	replace imp_altqtyunit = 0 if imp_altqtyunit==.
+	
 	bys hs4 QT_code: gen trade_gap_hs4=exp_tradevalueus-imp_tradevalueus       
 	bys hs4 QT_code: gen weight_gap_hs4=exp_altqtyunit-imp_altqtyunit
-	/* The above two commands generate 387 missing values in each of the two
-		variables, which are the ones that were not matched in the merge.
-		This can be confirmed by the following two commands:
-	*/
-	tab _merge trade_gap_hs4 if trade_gap_hs4==., missing
-	tab _merge weight_gap_hs4 if weight_gap_hs4==., missing
 	
 	save "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT.dta", replace
 	
@@ -480,7 +484,11 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 
 	use "$onedrive/Mirror and desc stats/matched_comtrade2017_hs4QT.dta", clear
 
-	collapse (sum) trade_gap_hs4 weight_gap_hs4, by(hs4)
+	gen hs2=int(hs4/100)
+	
+	collapse (sum) trade_gap_hs4 weight_gap_hs4, by(hs2)
+	
+	drop if hs2==27
 	
 *--------------------------- Graphs for Trade Gaps ----------------------------
 
@@ -488,31 +496,30 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	gsort -trade_gap_hs4
 	
 	graph hbar trade_gap_hs4 in 1/10, ///
-				over(hs4, sort(1) descending) ///
-				title("Top 10 HS4 codes in 2017 with largest positive trade gaps" "between export and import comtrade data") ///
+				over(hs2, sort(1) descending) ///
+				title("Top 10 HS2 codes in 2017 with largest positive trade gaps" "between export and import comtrade data") ///
 				blabel(bar, position(outside) format(%16.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(645000000) off) ///
+				yscale(range(640000000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/tradegap1_comtrade2017_hs4_9_4.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/tradegap1_comtrade2017_hs2_9_30.png", as(png) height(800) replace
 
 	
 	* Graph with 10 largest negative trade gaps
 	gsort trade_gap_hs4
 	
 	graph hbar trade_gap_hs4 in 1/10, ///
-				over(hs4, sort(1)) ///
-				title("Top 10 HS4 codes in 2017 with largest negative trade gaps" "between export and import comtrade data") ///
+				over(hs2, sort(1)) ///
+				title("Top 10 HS2 codes in 2017 with largest negative trade gaps" "between export and import comtrade data") ///
 				blabel(bar, position(outside) format(%16.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(off) ///
+				yscale(range(-8400000000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 
-	graph export "$intermediate_results/Graphs/tradegap2_comtrade2017_hs4_9_4.png", as(png) height(800) replace 
-				
+	graph export "$intermediate_results/Graphs/tradegap2_comtrade2017_hs2_9_30.png", as(png) height(800) replace 
 
 *--------------------------- Graphs for Weight Gaps ---------------------------
 
@@ -520,26 +527,29 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 	gsort -weight_gap_hs4
 	
 	graph hbar weight_gap_hs4 in 1/10, ///
-				over(hs4, sort(1) descending) ///
-				title("Top 10 HS4 codes in 2017 with largest positive weight gaps" "between export and import comtrade data") ///
+				over(hs2, sort(1) descending) ///
+				title("Top 10 HS2 codes in 2017 with largest positive weight gaps" "between export and import comtrade data") ///
 				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(1000000000) off) ///
+				yscale(range(1300000000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 			
-	graph export "$intermediate_results/Graphs/weightgap1_comtrade2017_hs4_9_4.png", as(png) height(800) replace
-
+	graph export "$intermediate_results/Graphs/weightgap1_comtrade2017_hs2_9_30.png", as(png) height(800) replace
+	
 	* Graph with 10 largest negative weight gaps
 	gsort weight_gap_hs4
 	
 	graph hbar weight_gap_hs4 in 1/10, ///
-				over(hs4, sort(1)) ///
-				title("Top 10 HS4 codes in 2017 with largest negative weight gaps" "between export and import comtrade data") ///
+				over(hs2, sort(1)) ///
+				title("Top 10 HS2 codes in 2017 with largest negative weight gaps" "between export and import comtrade data") ///
 				blabel(bar, position(outside) format(%17.0fc) color(black)) ///
 				ytitle("") ///
-				yscale(range(-33000000000) off) ///
+				yscale(range(-11400000000) off) ///
 				ylabel(, nogrid) ///
 				scheme(s1color)
 			
-	graph export "$intermediate_results/Graphs/weightgap2_comtrade2017_hs4_9_4.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/weightgap2_comtrade2017_hs2_9_30.png", as(png) height(800) replace
+
+	
+	

@@ -893,7 +893,7 @@
 	save "$intermediate_data/check_prices_taxes.dta", replace
 	
 	
-**********************Revenue loss estimation using previously calculated trade gaps:
+*****************Revenue loss estimation using previously calculated trade gaps:
 	use "$imports_data\imports_2017_2018.full.dta", clear
 
 	
@@ -1142,6 +1142,15 @@
 	save "$intermediate_data/check_prices_gap_preregression.dta", replace
 	
 	eststo clear
+	reghdfe trade_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
+	eststo reg_trade_gap_log1
+	reghdfe trade_gap_HS4 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	eststo reg_trade_gap_log2
+	reghdfe weight_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
+	eststo reg_weight_gap_log1
+	reghdfe weight_gap_HS4 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	eststo reg_weight_gap_log2
+	
 	reghdfe trade_gap_HS4 total_tax av_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_trade_gap1
 	reghdfe trade_gap_HS4 total_tax av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
@@ -1153,8 +1162,13 @@
 	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
 	eststo reg_logtrad
 
+	esttab reg_trade_gap_log1 reg_trade_gap_log2 reg_weight_gap_log1 reg_weight_gap_log2 using ///
+			"$intermediate_results/Tables/DeterminantsofGapNEW_FBRComtrade_9_30.rtf", ///
+				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
+				replace nobaselevels style(tex)
+				
 	esttab reg_trade_gap1 reg_trade_gap2 reg_weightgap_HS4_1 reg_weightgap_HS4_2 reg_logtrad using ///
-			"$intermediate_results/Tables/DeterminantsofGap_CHECK_9_25.rtf", ///
+			"$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_9_30.rtf", ///
 				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
 				replace nobaselevels style(tex)
 				
@@ -1165,7 +1179,7 @@
 								mlabgap(*2) bgcolor(white) ///
 								graphregion(fcolor(white)) grid(none) ///
 								scheme(s1color)
-	quietly graph export "$intermediate_results/Graphs/TradeGap_DeterminantsofGap_9_25.png", replace
+	quietly graph export "$intermediate_results/Graphs/TradeGap_FBRComtrade_DeterminantsofGap_9_30.png", replace
 	
 	coefplot reg_weightgap_HS4_1, bylabel(DV: Weight Gap) || ///
 				reg_trade_gap2, bylabel(DV: Weight Gap) ||, byopts(xrescale) ///
@@ -1174,7 +1188,7 @@
 								graphregion(fcolor(white)) grid(none) ///
 								scheme(s1color)
 					
-	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_9_25.png", replace
+	quietly graph export "$intermediate_results/Graphs/WeightGap_FBRComtrade_DeterminantsofGap_9_30.png", replace
 
 	
 	
@@ -1196,7 +1210,7 @@
 	collapse (sum) exp_netweightkg exp_altqtyunit exp_tradevalueus exp_unitprice_comtrade, by(hs4 QT_code)
 	sort hs4 QT_code
 	* This dataset has 5,819 observations
-	save "$exports_data/ExportsToPK2017_collapsehs4_QT_9_16.dta", replace
+	save "$exports_data/ExportsToPK2017_collapsehs4_QT_9_30.dta", replace
 	
 	
 	use "$imports_data/ImportsToPK_clean.dta", clear
@@ -1205,31 +1219,49 @@
 	collapse (sum) imp_netweightkg imp_altqtyunit imp_tradevalueus imp_unitprice_comtrade, by(hs4 QT_code)
 	sort hs4 QT_code
 	* This dataset has 4,816 observations
-	save "$imports_data/ImportsToPK2017_collapsehs4_QT_9_16.dta", replace
+	save "$imports_data/ImportsToPK2017_collapsehs4_QT_9_30.dta", replace
 	
-	merge 1:1 hs4 QT_code using "$exports_data/ExportsToPK2017_collapsehs4_QT_9_16.dta"
+	merge 1:1 hs4 QT_code using "$exports_data/ExportsToPK2017_collapsehs4_QT_9_30.dta"
 	* Matched: 1,320 | Not Matched: 352 (101 from imports, 251 from exports)
 	
+	replace exp_tradevalueus = 0 if exp_tradevalueus==.
+	replace imp_tradevalueus = 0 if imp_tradevalueus==.
+	replace exp_altqtyunit = 0 if exp_altqtyunit==.
+	replace imp_altqtyunit = 0 if imp_altqtyunit==.
+
 	bys hs4 QT_code: gen trade_gap_HS4=exp_tradevalueus-imp_tradevalueus
 	bys hs4 QT_code: gen weight_gap_HS4=exp_altqtyunit-imp_altqtyunit
 	
 	collapse (sum) trade_gap_HS4 weight_gap_HS4, by(hs4)
 	
-	save "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT_9_16.dta", replace
+	save "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT_9_30.dta", replace
 	
 	
 	use "$intermediate_data/check_prices_taxes.dta", clear
 	collapse (mean) total_taxes (first) av_total_taxes (sd) sd*, by(hs4)
 	sort hs4
-	merge 1:1 hs4 using "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT_9_16.dta", generate(merge3)
-	* Matched: 1,154 | Not Matched: 55 (4 from check_prices_taxes, 51 from matched_comtrade_hs4QT_9_16)
+	merge 1:1 hs4 using "$onedrive/Mirror and desc stats/matched_comtrade_hs4QT_9_30.dta", generate(merge3)
+	* Matched: 1,154 | Not Matched: 55 (4 from check_prices_taxes, 51 from matched_comtrade_hs4QT_9_30)
 	
 	gen hs2=int(hs4/100)
+
+	gen logavtaxes=log(av_total_taxes)
+	gen logsdtaxes=log(sd_total_taxes)
 	
-	save "$intermediate_data/preregression_9_16.dta", replace
+	save "$intermediate_data/preregression_9_30.dta", replace
 
 	
 	eststo clear
+	reghdfe trade_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
+	eststo reg_tradegap_log1
+	reghdfe trade_gap_HS4 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	eststo reg_tradegap_log2
+	reghdfe weight_gap_HS4 logavtaxes, vce(cluster hs2) noabsorb
+	eststo reg_weightgap_log1
+	reghdfe weight_gap_HS4 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	eststo reg_weightgap_log2
+	
+	
 	reghdfe trade_gap_HS4 total_taxes av_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_tradegapHS4
 	reghdfe trade_gap_HS4 total_taxes av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
@@ -1239,9 +1271,13 @@
 	reghdfe weight_gap_HS4 total_taxes av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
 	eststo reg_weightgapHS4_sd
 	
+	esttab reg_tradegap_log1 reg_tradegap_log2 reg_weightgap_log1 reg_weightgap_log2 using ///
+			"$intermediate_results/Tables/DeterminantsofGapNEW_ComtradeOnly_9_30.rtf", ///
+				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
+				replace nobaselevels style(tex)
 
 	esttab reg_tradegapHS4 reg_tradegapHS4_sd reg_weightgapHS4 reg_weightgapHS4_sd using ///
-			"$intermediate_results/Tables/DeterminantsofGap_CHECK_9_17.rtf", ///
+			"$intermediate_results/Tables/DeterminantsofGap_ComtradeOnly_9_30.rtf", ///
 				label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
 				replace nobaselevels style(tex)
 				
@@ -1252,7 +1288,7 @@
 								mlabgap(*2) bgcolor(white) ///
 								graphregion(fcolor(white)) grid(none) ///
 								scheme(s1color)
-	quietly graph export "$intermediate_results/Graphs/TradeGap_DeterminantsofGap_9_17.png", replace
+	quietly graph export "$intermediate_results/Graphs/TradeGap_DeterminantsofGap_ComtradeOnly_9_30.png", replace
 	
 	coefplot reg_weightgapHS4, bylabel(DV: Weight Gap) || ///
 				reg_weightgapHS4_sd, bylabel(DV: Weight Gap) ||, byopts(xrescale) ///
@@ -1261,4 +1297,5 @@
 								graphregion(fcolor(white)) grid(none) ///
 								scheme(s1color)
 					
-	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_9_17.png", replace
+	quietly graph export "$intermediate_results/Graphs/WeightGap_DeterminantsofGap_ComtradeOnly_9_30.png", replace
+	
