@@ -839,15 +839,15 @@
 	* Create the three categories required as a percent of original price
 
 	* Custom Duty
-	egen cust_duty_levies_temp=rowtotal(customsduty federalexciseduty petrloeumlevy)
+	egen cust_duty_levies_temp=rowtotal(customsduty federalexciseduty countervailingduty antidumping petrloeumlevy edibleoilcess regduty)
 	gen cust_duty_levies = ((cust_duty_levies_temp/USDollar)/imports_USD)*100
 	
 	* Taxes
-	egen taxes_temp=rowtotal(salestax incometax salestaxleviedascedinvatmode salestaxonlocalsupplies)
+	egen taxes_temp=rowtotal(salestax incometax gensaletax salestaxleviedascedinvatmode salestaxonlocalsupplies)
 	gen taxes = ((taxes_temp/USDollar)/imports_USD)*100
 
 	* Extra taxes
-	egen extra_taxes_temp=rowtotal(incometaxsurcharge additionalcustomduty gensaletax regduty antidumping addsaletax edibleoilcess frf warehousesurcharge iqra specialfed developmentsurcharge surcharge vrdamount overstayedgoodssurcharge servicecharge guaranteeadditionalsalestax countervailingduty)
+	egen extra_taxes_temp=rowtotal(incometaxsurcharge additionalcustomduty addsaletax frf warehousesurcharge iqra specialfed developmentsurcharge surcharge vrdamount overstayedgoodssurcharge servicecharge guaranteeadditionalsalestax)
 	gen extra_taxes = ((extra_taxes_temp/USDollar)/imports_USD)*100
 
 	* Generate total
