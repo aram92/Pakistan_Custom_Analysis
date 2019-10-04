@@ -859,15 +859,15 @@
 	* Create the three additional categories for declared
 
 	* Declared custom duties
-	egen decl_cust_temp=rowtotal(decalredcustomsduty decalredfederalexciseduty decalredpetrloeumlevy)
+	egen decl_cust_temp=rowtotal(decalredcustomsduty decalredfederalexciseduty decalredcountervailingduty decalredantidumping decalredpetrloeumlevy decalrededibleoilcess decalredregduty)
 	gen decl_cust = ((decl_cust_temp/USDollar)/imports_USD)*100
 
 	* Declared taxes
-	egen decl_taxes_temp=rowtotal(decalredsalestax decalredincometax decalredsalestaxleviedascedinvat decalredsalestaxonlocalsupplies)
+	egen decl_taxes_temp=rowtotal(decalredsalestax decalredincometax decalredgensaletax decalredsalestaxleviedascedinvat decalredsalestaxonlocalsupplies)
 	gen decl_taxes = ((decl_taxes_temp/USDollar)/imports_USD)*100
 
 	* Declared extra taxes
-	egen decl_extra_taxes_temp=rowtotal(decalredincometaxsurcharge decalredadditionalcustomduty decalredgensaletax decalredregduty decalredantidumping decalredaddsaletax decalrededibleoilcess decalredfrf decalredwarehousesurcharge decalrediqra decalredspecialfed decalreddevelopmentsurcharge decalredsurcharge decalredvrdamount decalredoverstayedgoodssurcharge decalredservicecharge decalredguaranteeadditionalsales decalredcountervailingduty)
+	egen decl_extra_taxes_temp=rowtotal(decalredincometaxsurcharge decalredadditionalcustomduty decalredaddsaletax decalredfrf decalredwarehousesurcharge decalrediqra decalredspecialfed decalreddevelopmentsurcharge decalredsurcharge decalredvrdamount decalredoverstayedgoodssurcharge decalredservicecharge decalredguaranteeadditionalsales)
 	gen decl_extra_taxes = ((decl_extra_taxes_temp/USDollar)/imports_USD)*100
 
 	* Declared total

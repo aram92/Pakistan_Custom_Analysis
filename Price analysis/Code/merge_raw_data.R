@@ -40,6 +40,7 @@ keep_vars <- c("GD_NO_ID", "GD_Date", "ntnid", "Agent.id", "Shed_Name", "Shippin
                "Last_Channel", "GrossWeight", "NetWeight", "Quantity", "hs6")
 all_import1 = all_import[keep_vars]
 
+write.csv(all_import, file = "C:/Users/wb554990/OneDrive - WBG/Pakistan Custom Data Analysis/Imports/PAK_raw_check.csv", na = "")
 write.csv(all_import1, file = "C:/Users/wb554990/OneDrive - WBG/Pakistan Custom Data Analysis/Imports/hs6_check.csv")
 
 
