@@ -623,17 +623,18 @@
 *===============================================================================
 	
 	use "$intermediate_data/check_prices_gap_preregression_10_1.dta", clear
-	eststo clear
-	reghdfe trade_gap_hs6 av_total_taxes, vce(cluster hs2) noabsorb
-	eststo reg_trade_gap_log1
-	reghdfe trade_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
-	eststo reg_trade_gap_log2
-	reghdfe weight_gap_hs6 av_total_taxes, vce(cluster hs2) noabsorb
-	eststo reg_weight_gap_log1
-	reghdfe weight_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
-	eststo reg_weight_gap_log2
 	
-	esttab reg_trade_gap_log1 reg_trade_gap_log2 reg_weight_gap_log1 reg_weight_gap_log2 using ///
-		"$intermediate_results/Tables/DeterminantsofGapNEW_FBRComtrade_10_1.rtf", ///
-			label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
-			replace nobaselevels style(tex)
+	reghdfe trade_gap_hs6 av_total_taxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_hs6 av_total_taxes, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	
+	eststo clear
+	reghdfe trade_gap_hs6 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	eststo sig1
+	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	eststo sig2
+	
+	esttab sig1 sig2 using "$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_10_4.rtf", ///
+							label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
+							replace nobaselevels style(tex)
