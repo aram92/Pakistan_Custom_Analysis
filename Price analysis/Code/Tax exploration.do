@@ -328,7 +328,7 @@
 	foreach var in `category_taxes' {
 		* Create means, SD by HS code
 		bys hs6 yearmonth: egen av_`var'= mean(`var')
-		bys hs6 yearmonth:  egen sd_`var' = sd(`var')
+		bys hs6 yearmonth:  gen sd_`var' = `var'
 		gen dev`var'=`var'-av_`var'
 		
 		* Generate sum of absolute deviations from mean
@@ -338,6 +338,95 @@
 
 	save "$intermediate_data/TaxData_10_1.dta", replace
 
+*------------------------------------------------------------------------------
+	use "$intermediate_data/TaxData_10_1.dta", clear
+	
+		local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var of local category_taxes {
+		preserve
+		gen `var'_p99 = `var'
+		collapse (mean)`var' (p99)`var'p99, by(hs6)
+
+		hist `var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+			title("Distribution of average taxation rate per HS6 code for "`var') ///
+			xtitle("Taxation rate (%)") color(dkgreen) ///
+			lstyle(axisline) graphregion(style(none) color(gs16))
+			
+		graph export "$intermediate_results/Graphs/TaxDist_`var'_10_7.pdf", replace
+
+		hist `var' if `var'<`var'_p99, freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+			title("Distribution of average taxation rate per HS6 code for "`var') ///
+			xtitle("Taxation rate (%)") color(dkgreen) ///
+			lstyle(axisline) graphregion(style(none) color(gs16))
+			
+		graph export "$intermediate_results/Graphs/TaxDist_`var'_o_10_7.pdf", replace
+		
+		
+		restore
+		
+		
+		preserve
+		gen `var'_max=`var'
+		gen `var'_min=`var'
+		gen `var'_p99=`var'
+		
+		collapse (min) `var'_min (max) `var'_max (p99) `var'_p99, by(hs4)
+		gen d_`var'=`var'_max - `var'_min
+		
+		hist d_`var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+			title("Distribution of difference between the minimum" "and maximum taxation rate per HS4 code for "`var') ///
+			xtitle("Difference between minimum and maximum") color(dkgreen) ///
+			lstyle(axisline) graphregion(style(none) color(gs16))
+		
+		graph export "$intermediate_results/Graphs/TaxDistDiff_`var'_10_7.pdf", replace
+
+		
+		hist d_`var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+			title("Distribution of difference between the minimum" "and maximum taxation rate per HS4 code for "`var') ///
+			xtitle("Difference between minimum and maximum") color(dkgreen) ///
+			lstyle(axisline) graphregion(style(none) color(gs16))
+		
+		graph export "$intermediate_results/Graphs/TaxDistDiff_`var'_o_10_7.pdf", replace
+		restore
+	}
+	
+	
+	
+	
+	
+	* @KC: Find out why the below loop doesn't work
+	local hist_taxes "total_taxes decl_total av_total_taxes av_decl_total"
+	foreach var in `hist_taxes'	{
+		bys hs4: egen max_`var' = max(`var')
+		bys hs4: egen min_`var' = min(`var')
+
+		gen `var'_hs4range= max_`var' - min_`var'
+		
+		drop max_`var' min_`var'
+	}
+	
+	collapse (first) total_taxes_hs4range decl_total_hs4range av_total_taxes_hs4range av_decl_total_hs4range, by(hs4)
+	
+	histogram total_taxes_hs4range, start(0) width(1)
+	
+	codebook total_taxes_hs4range
+	summarize total_taxes_hs4range, detail
+	
+	
+	gsort hs6 yearmonth
+	br hs6 yearmonth av*
+	
+	collapse (mean) total_taxes decl_total av*, by(hs6)
+	
+	histogram total_taxes, start(0) width(1)
+	levelsof total_taxes if total_taxes>100
+	br hs4 hs6 total_taxes if total_taxes > 100
+	
+	histogram decl_total, start(0) width(1)
+	levelsof decl_total if decl_total>100
+	br hs4 hs6 decl_total if decl_total>100
+	
+	
 	
 *------------------------------------------------------------------------------
 	
@@ -604,14 +693,21 @@
 
 	use "$intermediate_data/TaxData_10_1.dta"
 
-	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
+	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6) // @KC: Investigate the potential error because of (first)
+	
 	sort hs6
 	merge 1:1 hs6 using "$intermediate_data/trade_gaps_10_1.dta"
+	
+	gen hs4 = int(hs6/100)
+	bys hs4: egen av_total_taxes_hs4 = mean(av_total_taxes)
+	bys hs4: egen sd_total_taxes_hs4 = mean(sd_total_taxes) // @KC: ask Samih what can be done here instead
 	
 	gen logtrad=log(trade_gap_hs6)
 	gen logavtaxes=log(av_total_taxes)
 	gen logtotaltaxes=log(total_taxes)
 	gen logsdtaxes=log(sd_total_taxes)
+	gen logavtaxes_hs4=log(av_total_taxes_hs4)
+	gen logsdtaxes_hs4=log(sd_total_taxes_hs4)
 
 	gen hs2=int(hs6/10000)
 	
@@ -624,15 +720,17 @@
 	
 	use "$intermediate_data/check_prices_gap_preregression_10_1.dta", clear
 	
-	reghdfe trade_gap_hs6 av_total_taxes, vce(cluster hs2) noabsorb
-	reghdfe trade_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
-	reghdfe weight_gap_hs6 av_total_taxes, vce(cluster hs2) noabsorb
-	reghdfe weight_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	// @KC: Try different permutations of these regs to see what's significant
+	
+	reghdfe trade_gap_hs6 av_total_taxes av_total_taxes_hs4, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_hs6 av_total_taxes sd_total_taxes av_total_taxes_hs4 sd_total_taxes_hs4, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_hs6 av_total_taxes av_total_taxes_hs4, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_hs6 av_total_taxes sd_total_taxes av_total_taxes_hs4 sd_total_taxes_hs4, vce(cluster hs2) noabsorb
 	
 	eststo clear
-	reghdfe trade_gap_hs6 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_hs6 logavtaxes logsdtaxes logavtaxes_hs4 logsdtaxes_hs4, vce(cluster hs2) noabsorb
 	eststo sig1
-	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes logavtaxes_hs4 logsdtaxes_hs4, vce(cluster hs2) noabsorb
 	eststo sig2
 	
 	esttab sig1 sig2 using "$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_10_4.rtf", ///

@@ -869,13 +869,14 @@
 		
 		
 		preserve
-		gen m`var'=`var'
-		collapse (min) `var' (max) m`var', by(hs6)
-		gen d=m`var'-`var'
+		gen `var'_max=`var'
+		gen `var'_min=`var'
+		collapse (min) `var'_min (max) `var'_max, by(hs4)
+		gen d_`var'=`var'_max - `var'_min
 		
-		hist `var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+		hist d_`var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
 			title("Distribution of difference between the minimum" "and maximum taxation rate per HS6 code for "`var') ///
-			xtitle("Taxation rate (%)") xlabel(#10) xtick(#40) color(dkgreen) ///
+			xtitle("Difference between minimum and maximum") xlabel(#10) xtick(#40) color(dkgreen) ///
 			lstyle(axisline) graphregion(style(none) color(gs16))
 		
 		graph export "$intermediate_results/Graphs/Taxes_`var'_diff_8_18.pdf", replace

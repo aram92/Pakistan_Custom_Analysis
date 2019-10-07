@@ -1277,13 +1277,82 @@
 	gen hs2=int(hs4/100)
 
 	gen av_effective_tax = float(av_total_taxes/100)
-	gen lossUSD = av_effective_tax*trade_gap_HS4
+	bye hs4: gen lossUSD = av_effective_tax*trade_gap_HS4
 	
 	gen logavtaxes=log(av_total_taxes)
 	gen logsdtaxes=log(sd_total_taxes)
 	
 	save "$intermediate_data/preregression_10_1.dta", replace
 
++*-------------------------------------------------------------------------------			
+	use "$intermediate_data/preregression_10_1.dta", clear		
+	collapse (sum) lossUSD, by(hs2)		
+			
+	keep if hs2 == 99 | ///		
+			hs2 == 88 | ///		
+			hs2 == 71 | ///		
+			hs2 == 64 | ///		
+			hs2 == 62 | ///		
+			hs2 == 42 | ///		
+			hs2 == 61 | ///		
+			hs2 == 93 | ///		
+			hs2 == 50 | ///		
+			hs2 == 24		
+			
+	gen tradegap_order = 0		
+	replace tradegap_order = 1 if hs2 == 99		
+	replace tradegap_order = 2 if hs2 == 88		
+	replace tradegap_order = 3 if hs2 == 71		
+	replace tradegap_order = 4 if hs2 == 64		
+	replace tradegap_order = 5 if hs2 == 62		
+	replace	tradegap_order = 6 if hs2 == 42		
+	replace tradegap_order = 7 if hs2 == 61		
+	replace tradegap_order = 8 if hs2 == 93		
+	replace tradegap_order = 9 if hs2 == 50		
+	replace tradegap_order = 10 if hs2 == 24		
+			
+			
+	* Graph top 10 HS2 codes with most tax lost		
+	gsort tradegap_order		
+	graph hbar lossUSD, ///		
+				over(hs2, sort(tradegap_order)) ///		
+				title("Tax revenue losses of Top 10 HS2 codes with greatest positive" "trade gaps, 2017") ///		
+				subtitle("(U.S. Dollars)") ///		
+				note("Using both import and export data from UN Comtrade and tax data from FBR") ///		
+				blabel(bar, position(outside) format(%15.0fc) color(black)) ///		
+				ytitle("") ///		
+				yscale(range(2800000) off) ///		
+				ylabel(, nogrid) ///		
+				scheme(s1color)		
+			
+	graph export "$intermediate_results/Graphs/TaxLoss_Comtrade_Order_10_2.png", as(png) height(800) replace		
+			
+*--------------		
+	use "$intermediate_data/preregression_10_1.dta", clear		
+	collapse (sum) lossUSD, by(hs2)		
+			
+	* Graph top 10 HS2 codes with most tax lost		
+	gsort -lossUSD		
+	graph hbar lossUSD in 1/10, ///		
+				over(hs2, sort(1) descending) ///		
+				title("Top 10 HS2 codes with most tax revenue losses" "due to trade gaps, 2017") ///		
+				subtitle("(U.S. Dollars)") ///		
+				note("Using both import and export data from UN Comtrade and tax data from FBR") ///		
+				blabel(bar, position(outside) format(%15.0fc) color(black)) ///		
+				ytitle("") ///		
+				yscale(off) ///		
+				ylabel(, nogrid) ///		
+				scheme(s1color)		
+			
+	graph export "$intermediate_results/Graphs/TaxLoss_Comtrade_Top_10_2.png", as(png) height(800) replace			
+*--------------		
+	keep if hs4==7101 | ///		
+			hs4==7107 | ///		
+			hs4==7111		
+			
+*-------------------------------------------------------------------------------		
+			
+	use "$intermediate_data/preregression_10_1.dta", clear
 	
 	eststo clear
 	reghdfe trade_gap_HS4 av_total_taxes, vce(cluster hs2) noabsorb
