@@ -1148,7 +1148,8 @@
 	save "$intermediate_data/check_prices_gap_preregression.dta", replace
 	
 *-------------------------------------------------------------------------------	
-
+	use "$intermediate_data/check_prices_gap_preregression.dta", clear
+	
 	collapse (sum) lossUSD, by(hs2)
 	
 	* Graph top 10 HS2 codes with most tax lost
@@ -1164,7 +1165,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/TaxLoss_TradeGap_HS4-HS2_10_1.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/TaxLoss_FBRComtrade_Top_10_7.png", as(png) height(800) replace
 	
 
 *-------------------------------------------------------------------------------	

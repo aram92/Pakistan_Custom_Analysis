@@ -264,9 +264,9 @@
 	
 	save "$intermediate_data/PriceData_clean_hs6_10_1.dta", replace
 	
-**************************************************************************
+********************************************************************************
 * 			TAX AND TRADE GAP
-**************************************************************************
+********************************************************************************
 
 	use "$intermediate_data/PriceData_clean_hs6_10_1.dta", clear
 	
@@ -341,26 +341,17 @@
 *------------------------------------------------------------------------------
 	use "$intermediate_data/TaxData_10_1.dta", clear
 	
-		local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
 	foreach var of local category_taxes {
 		preserve
-		gen `var'_p99 = `var'
-		collapse (mean)`var' (p99)`var'p99, by(hs6)
+		collapse (mean)`var', by(hs6)
 
 		hist `var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
 			title("Distribution of average taxation rate per HS6 code for "`var') ///
-			xtitle("Taxation rate (%)") color(dkgreen) ///
+			xtitle("Taxation rate (%)") color(dkgreen) xlabel(,format(%15.0fc)) ///
 			lstyle(axisline) graphregion(style(none) color(gs16))
 			
-		graph export "$intermediate_results/Graphs/TaxDist_`var'_10_7.pdf", replace
-
-		hist `var' if `var'<`var'_p99, freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
-			title("Distribution of average taxation rate per HS6 code for "`var') ///
-			xtitle("Taxation rate (%)") color(dkgreen) ///
-			lstyle(axisline) graphregion(style(none) color(gs16))
-			
-		graph export "$intermediate_results/Graphs/TaxDist_`var'_o_10_7.pdf", replace
-		
+		graph export "$intermediate_results/Graphs/TaxDist_`var'_10_7.png", as(png) height(800) replace
 		
 		restore
 		
@@ -368,49 +359,82 @@
 		preserve
 		gen `var'_max=`var'
 		gen `var'_min=`var'
-		gen `var'_p99=`var'
 		
-		collapse (min) `var'_min (max) `var'_max (p99) `var'_p99, by(hs4)
+		collapse (min) `var'_min (max) `var'_max, by(hs4)
 		gen d_`var'=`var'_max - `var'_min
 		
 		hist d_`var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
 			title("Distribution of difference between the minimum" "and maximum taxation rate per HS4 code for "`var') ///
 			xtitle("Difference between minimum and maximum") color(dkgreen) ///
-			lstyle(axisline) graphregion(style(none) color(gs16))
+			xlabel(,format(%15.0fc)) graphregion(style(none) color(gs16)) ///
+			lstyle(axisline)
 		
-		graph export "$intermediate_results/Graphs/TaxDistDiff_`var'_10_7.pdf", replace
-
+		graph export "$intermediate_results/Graphs/TaxDistDiff_`var'_10_7.png", as(png) height(800) replace
 		
-		hist d_`var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
-			title("Distribution of difference between the minimum" "and maximum taxation rate per HS4 code for "`var') ///
-			xtitle("Difference between minimum and maximum") color(dkgreen) ///
-			lstyle(axisline) graphregion(style(none) color(gs16))
-		
-		graph export "$intermediate_results/Graphs/TaxDistDiff_`var'_o_10_7.pdf", replace
 		restore
 	}
 	
 	
+	use "$intermediate_data/TaxData_10_1.dta", clear
+	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total, by(hs6)
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var of local category_taxes {
+		display "`var'"
+		count if `var' > 100
+		count if `var' > 1000
+	}
 	
 	
+	use "$intermediate_data/TaxData_10_1.dta", clear
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var of local category_taxes {
+		display "`var'"
+		count if `var' == 0
+		count if `var' == .
+		count if `var' != 0 & `var' != .
+	}
 	
-	* @KC: Find out why the below loop doesn't work
-	local hist_taxes "total_taxes decl_total av_total_taxes av_decl_total"
+	import delimited "$intermediate_data/tax_declaration_2017.csv", clear
+	gsort -pct_declared
+	
+	replace tax_variable="Custom Duties & Levies" if tax_variable=="cust_duty_levies"
+	replace tax_variable="Taxes" if tax_variable=="taxes"
+	replace tax_variable="Extra Taxes & Duties" if tax_variable=="extra_taxes"
+	replace tax_variable="Total Taxes" if tax_variable=="total_taxes"
+	replace tax_variable="Declared Custom Duties & Levies" if tax_variable=="decl_cust"
+	replace tax_variable="Declared Taxes" if tax_variable=="decl_taxes"
+	replace tax_variable="Declared Extra Taxes & Duties" if tax_variable=="decl_extra_taxes"
+	replace tax_variable="Declared Total Taxes" if tax_variable=="decl_total"
+	
+	graph hbar pct_declared, over(tax_variable, sort(1) descending) ///
+			title("Percentage of goods declared, by tax category, 2017") ///
+			blabel(bar, position(outside) format(%9.3fc) color(black)) ///
+			ytitle("") ///
+			yscale(range(110) off) ///
+			ylabel(, nogrid) ///
+			xsize(7) ///
+			scheme(s1color)
+	
+	graph export "$intermediate_results/Graphs/TaxDeclaration2017_10_7.png", as(png) height(800) replace
+	
+/*
+	local hist_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
 	foreach var in `hist_taxes'	{
 		bys hs4: egen max_`var' = max(`var')
 		bys hs4: egen min_`var' = min(`var')
-
 		gen `var'_hs4range= max_`var' - min_`var'
-		
 		drop max_`var' min_`var'
 	}
 	
-	collapse (first) total_taxes_hs4range decl_total_hs4range av_total_taxes_hs4range av_decl_total_hs4range, by(hs4)
+	collapse (first) cust_duty_levies_hs4range taxes_hs4range ///
+					extra_taxes_hs4range total_taxes_hs4range decl_cust_hs4range ///
+					decl_taxes_hs4range decl_extra_taxes_hs4range decl_total_hs4range ///
+					, by(hs4)
 	
-	histogram total_taxes_hs4range, start(0) width(1)
-	
-	codebook total_taxes_hs4range
-	summarize total_taxes_hs4range, detail
+	hist d_`var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+			title("Distribution of difference between the minimum" "and maximum taxation rate per HS4 code for "`var') ///
+			xtitle("Difference between minimum and maximum") color(dkgreen) ///
+			lstyle(axisline) graphregion(style(none) color(gs16))	
 	
 	
 	gsort hs6 yearmonth
@@ -425,9 +449,28 @@
 	histogram decl_total, start(0) width(1)
 	levelsof decl_total if decl_total>100
 	br hs4 hs6 decl_total if decl_total>100
+*/	
 	
 	
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var of local category_taxes {
+		gen `var'_max=`var'
+		gen `var'_min=`var'
+	}
+		
+	collapse (min) *_min (max) *_max, by(hs4)
 	
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var of local category_taxes {
+		gen d_`var'=`var'_max - `var'_min	
+	}
+	
+	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var of local category_taxes {
+		display "d_`var'"
+		count if d_`var' > 100
+		count if d_`var' > 1000
+	}
 *------------------------------------------------------------------------------
 	
 	use "$intermediate_data/PriceData_clean_hs6_10_1.dta", clear
@@ -662,8 +705,8 @@
 	replace netweightkg =0 if netweightkg ==.
 	replace  quantity =0 if  quantity ==.
 
-	bys hs6 QT_code : gen trade_gap_hs6=tradevalueus-imports_USD
-	bys hs6 QT_code : gen weight_gap_hs6=altqtyunit-quantity
+	bys hs6 QT_code : gen trade_gap_hs6=log(tradevalueus)-log(imports_USD)
+	bys hs6 QT_code : gen weight_gap_hs6=log(altqtyunit)-log(quantity)
 
 	
 	collapse (sum) tradevalueus imports_USD trade_gap_hs6 weight_gap_hs6 altqtyunit quantity, by(hs6 QT_code)
@@ -693,21 +736,24 @@
 
 	use "$intermediate_data/TaxData_10_1.dta"
 
-	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes (first) av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6) // @KC: Investigate the potential error because of (first)
+	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes av_cust_duty_levies av_taxes av_extra_taxes av_total_taxes (sd) sd*, by(hs6)
 	
 	sort hs6
 	merge 1:1 hs6 using "$intermediate_data/trade_gaps_10_1.dta"
+/*	Unmatched:			689
+		from master:	0
+		from using:		689
+		
+	Matched:			4,380
+*/
 	
 	gen hs4 = int(hs6/100)
 	bys hs4: egen av_total_taxes_hs4 = mean(av_total_taxes)
-	bys hs4: egen sd_total_taxes_hs4 = mean(sd_total_taxes) // @KC: ask Samih what can be done here instead
 	
-	gen logtrad=log(trade_gap_hs6)
 	gen logavtaxes=log(av_total_taxes)
 	gen logtotaltaxes=log(total_taxes)
 	gen logsdtaxes=log(sd_total_taxes)
 	gen logavtaxes_hs4=log(av_total_taxes_hs4)
-	gen logsdtaxes_hs4=log(sd_total_taxes_hs4)
 
 	gen hs2=int(hs6/10000)
 	
@@ -721,18 +767,17 @@
 	use "$intermediate_data/check_prices_gap_preregression_10_1.dta", clear
 	
 	// @KC: Try different permutations of these regs to see what's significant
-	
-	reghdfe trade_gap_hs6 av_total_taxes av_total_taxes_hs4, vce(cluster hs2) noabsorb
-	reghdfe trade_gap_hs6 av_total_taxes sd_total_taxes av_total_taxes_hs4 sd_total_taxes_hs4, vce(cluster hs2) noabsorb
-	reghdfe weight_gap_hs6 av_total_taxes av_total_taxes_hs4, vce(cluster hs2) noabsorb
-	reghdfe weight_gap_hs6 av_total_taxes sd_total_taxes av_total_taxes_hs4 sd_total_taxes_hs4, vce(cluster hs2) noabsorb
-	
 	eststo clear
-	reghdfe trade_gap_hs6 logavtaxes logsdtaxes logavtaxes_hs4 logsdtaxes_hs4, vce(cluster hs2) noabsorb
-	eststo sig1
-	reghdfe logtrad logtotaltaxes logavtaxes logsdtaxes logavtaxes_hs4 logsdtaxes_hs4, vce(cluster hs2) noabsorb
-	eststo sig2
+	reghdfe trade_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_1
+	reghdfe weight_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	eststo reg_2
+	reghdfe trade_gap_hs6 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	eststo reg_3
+	reghdfe weight_gap_hs6 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	eststo reg_4
+
 	
-	esttab sig1 sig2 using "$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_10_4.rtf", ///
-							label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) ///
-							replace nobaselevels style(tex)
+	esttab reg_1 reg_2 reg_3 reg_4 using ///
+		"$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_10_7.rtf", ///
+		label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
