@@ -851,8 +851,7 @@
 	gen extra_taxes = ((extra_taxes_temp/USDollar)/imports_USD)*100
 
 	* Generate total
-	egen total_taxes_temp=rowtotal(cust_duty_levies taxes extra_taxes)
-	gen total_taxes = ((total_taxes_temp/USDollar)/imports_USD)*100
+	egen total_taxes=rowtotal(cust_duty_levies taxes extra_taxes)
 
 	
 //----
@@ -871,9 +870,8 @@
 	gen decl_extra_taxes = ((decl_extra_taxes_temp/USDollar)/imports_USD)*100
 
 	* Declared total
-	egen decl_total_temp = rowtotal(decl_cust decl_taxes decl_extra_taxes)
-	gen decl_total = ((decl_total_temp/USDollar)/imports_USD)*100
 
+	egen decl_total = rowtotal(decl_cust decl_taxes decl_extra_taxes)
 	drop if year!=2017
 	
 //----
