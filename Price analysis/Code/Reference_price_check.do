@@ -594,7 +594,7 @@
 
 
 	* remove from outliers the values within the CI
-	replace outliers_3sd=0 if low_3sd<unit_price_comtrade<up_3sd
+	replace outliers_3sd=0 if low_3sd<unit_price_comtrade<up_3sd & unit_price_comtrade!=.
 	
 	* Graph of distribution of outliers before dropping observations
 	graph hbar (sum) outliers_3sd, over(yearmonth) ///

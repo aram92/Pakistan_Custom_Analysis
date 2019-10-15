@@ -402,16 +402,16 @@
 		local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
 	foreach var of local category_taxes {
 		display "`var' per item"
-		count if `var' > 100
-		count if `var' > 1000
+		count if `var' > 100 & `var'!=.
+		count if `var' > 1000 & `var'!=.
 	}
 	
 	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total, by(hs6)
 	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
 	foreach var of local category_taxes {
 		display "`var' per HS6 code"
-		count if `var' > 100
-		count if `var' > 1000
+		count if `var' > 100 & `var'!=.
+		count if `var' > 1000 & `var'!=.
 	}
 	
 	
