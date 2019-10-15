@@ -557,3 +557,6 @@ import delimited "$exports_data/exports_comtrade_2017_2018.csv", clear
 				scheme(s1color)
 			
 	graph export "$intermediate_results/Graphs/weightgap2_comtrade2017_hs2_9_30.png", as(png) height(800) replace
+
+
+	

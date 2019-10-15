@@ -262,6 +262,8 @@
 	* Setting font for graphs to Times New Roman
 	graph set window fontface "Times New Roman"
 	
+	drop if co=="Afghanistan"
+	
 	save "$intermediate_data/PriceData_clean_hs6_10_1.dta", replace
 	
 ********************************************************************************
@@ -269,7 +271,6 @@
 ********************************************************************************
 
 	use "$intermediate_data/PriceData_clean_hs6_10_1.dta", clear
-	
 	
 
 	* Merge the data set containing the exchange rate variable
@@ -344,15 +345,38 @@
 		preserve
 		collapse (mean)`var', by(hs6)
 
-		hist `var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+		hist `var', freq addlabels addlabopts(mlabsize(vsmall)) ytitle("") yscale(off) ///
+			ylabel(, nogrid) xtitle("Taxation rate (%)") xlabel(,format(%15.0fc)) ///
 			title("Distribution of average taxation rate per HS6 code for "`var') ///
-			xtitle("Taxation rate (%)") color(dkgreen) xlabel(,format(%15.0fc)) ///
-			lstyle(axisline) graphregion(style(none) color(gs16))
+			color(dkgreen) lstyle(axisline) graphregion(style(none) color(gs16))
 			
-		graph export "$intermediate_results/Graphs/TaxDist_`var'_10_7.png", as(png) height(800) replace
+		graph export "$intermediate_results/Graphs/TaxDist_`var'_10_11.png", as(png) height(800) replace
 		
 		restore
+*%%%%%%%%%%%%		
+		preserve
 		
+		collapse (mean) cust_duty_levies total_taxes, by(hs6)
+		
+		hist cust_duty_levies, freq addlabels ytitle("") yscale(off) ///
+			ylabel(, nogrid) xtitle("Taxation rate (%)") xlabel(,format(%15.0fc)) ///
+			title("Distribution of average taxation rate per HS6 code for cust_duty_levies") ///
+			color(dkgreen) lstyle(axisline) graphregion(style(none) color(gs16)) ///
+			width(10)
+			
+		graph export "$intermediate_results/Graphs/TaxDist_custdutylevies_10_11.png", as(png) height(800) replace
+
+		
+		hist total_taxes, freq addlabels ytitle("") yscale(off) ///
+			ylabel(, nogrid) xtitle("Taxation rate (%)") xlabel(,format(%15.0fc)) ///
+			title("Distribution of average taxation rate per HS6 code for total_taxes") ///
+			color(dkgreen) lstyle(axisline) graphregion(style(none) color(gs16)) ///
+			width(10)
+			
+		graph export "$intermediate_results/Graphs/TaxDist_totaltaxes_10_11.png", as(png) height(800) replace	
+		
+		restore
+*%%%%%%%%%%%%		
 		
 		preserve
 		gen `var'_max=`var'
@@ -361,23 +385,31 @@
 		collapse (min) `var'_min (max) `var'_max, by(hs4)
 		gen d_`var'=`var'_max - `var'_min
 		
-		hist d_`var', freq addlabels ytitle("") yscale(off) ylabel(, nogrid) ///
+		hist d_`var', freq addlabels addlabopts(mlabsize(vsmall)) ytitle("") yscale(off) ///
+			ylabel(, nogrid) xtitle("Difference between minimum and maximum") ///
+			xlabel(,format(%15.0fc)) color(dkgreen) lstyle(axisline) ///
 			title("Distribution of difference between the minimum" "and maximum taxation rate per HS4 code for "`var') ///
-			xtitle("Difference between minimum and maximum") color(dkgreen) ///
-			xlabel(,format(%15.0fc)) graphregion(style(none) color(gs16)) ///
-			lstyle(axisline)
+			graphregion(style(none) color(gs16))
+			
 		
-		graph export "$intermediate_results/Graphs/TaxDistDiff_`var'_10_7.png", as(png) height(800) replace
+		graph export "$intermediate_results/Graphs/TaxDistDiff_`var'_10_11.png", as(png) height(800) replace
 		
 		restore
 	}
 	
 	
 	use "$intermediate_data/TaxData_10_1.dta", clear
+		local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var of local category_taxes {
+		display "`var' per item"
+		count if `var' > 100
+		count if `var' > 1000
+	}
+	
 	collapse (mean) cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total, by(hs6)
 	local category_taxes "cust_duty_levies taxes extra_taxes total_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
 	foreach var of local category_taxes {
-		display "`var'"
+		display "`var' per HS6 code"
 		count if `var' > 100
 		count if `var' > 1000
 	}
@@ -689,13 +721,12 @@
 	sort hs6 QT_code 
 	
 	merge 1:1 hs6 QT_code using "$exports_data/ExportsToPK_collapsehs6_10_1.dta"
-/*	Unmatched:			2,359
-		from master:	490
+/*	Unmatched:			2,358
+		from master:	489
 		from using:		1,869
 		
 	Matched:			3,950
 */
-	save "$onedrive/Mirror and desc stats/matched_hs6_10_1.dta", replace
 
 	replace tradevalueus =0 if tradevalueus ==.
 	replace imports_USD=0 if imports_USD==.
@@ -703,6 +734,117 @@
 	replace netweightkg =0 if netweightkg ==.
 	replace  quantity =0 if  quantity ==.
 
+	save "$onedrive/Mirror and desc stats/matched_hs6_10_1.dta", replace
+
+********************************************************************************
+* 			Data Visualization for Tax Revenue Loss with FBR-Comtrade
+********************************************************************************
+	use "$onedrive/Mirror and desc stats/matched_hs6_10_1.dta", clear
+	
+	bys hs6 QT_code: gen trade_gap_graph = tradevalueus-imports_USD
+	bys hs6 QT_code: gen weight_gap_graph = altqtyunit-quantity
+
+	collapse (sum) trade_gap_graph, by(hs6)
+	save "$intermediate_data/trade_gaps_taxloss_10_11.dta", replace
+
+	use "$intermediate_data/TaxData_10_1.dta", clear
+
+	collapse (mean) total_taxes av_total_taxes cust_duty_levies taxes extra_taxes decl_cust decl_taxes decl_extra_taxes decl_total, by(hs6)
+	
+	sort hs6
+	merge 1:1 hs6 using "$intermediate_data/trade_gaps_taxloss_10_11.dta"
+	
+	gen av_effective_tax = float(av_total_taxes/100)
+	bys hs6: gen lossUSD = av_effective_tax*trade_gap_graph
+
+	gen hs2=int(hs6/10000)
+
+	save "$intermediate_data/pretaxlossgraph_10_11.dta", replace
+*--------
+	
+	use "$intermediate_data/pretaxlossgraph_10_11.dta", clear
+	
+	
+	*	HS2 15 has net negative tax revenue loss because of missing tax data:
+	list hs6 if hs2==15 & av_total_taxes==.
+	list hs6 if hs2==15 & total_taxes==.
+/* 	HS6 codes with missing average and total tax data:
+		150110
+		150290
+		150710
+		151211
+		151411
+		151491
+		151521
+*/
+	
+	
+	collapse (mean) total_taxes av_total_taxes cust_duty_levies taxes extra_taxes decl_cust decl_taxes decl_extra_taxes decl_total (sum) trade_gap_graph lossUSD, by(hs2)
+	
+	keep if hs2 == 84 | ///
+	hs2 == 85 | ///
+	hs2 == 72 | ///
+	hs2 == 87 | ///
+	hs2 == 52 | ///
+	hs2 == 23 | ///
+	hs2 == 29 | ///
+	hs2 == 15 | ///
+	hs2 == 88 | ///
+	hs2 == 90 | ///
+	hs2 == 30
+	
+	
+	local category_taxes "av_total_taxes total_taxes cust_duty_levies taxes extra_taxes decl_cust decl_taxes decl_extra_taxes decl_total"
+	foreach var in `category_taxes' {
+	 display "`var'"
+	 list hs2 if `var' ==.
+	}
+
+
+*--------
+	
+	use "$intermediate_data/pretaxlossgraph_10_11.dta", clear
+
+	collapse (sum) lossUSD, by(hs2)
+	drop if hs2==27
+	
+	gen tradegap_order = 0		
+	replace tradegap_order = 1 if hs2 == 84		
+	replace tradegap_order = 2 if hs2 == 85		
+	replace tradegap_order = 3 if hs2 == 72		
+	replace tradegap_order = 4 if hs2 == 87		
+	replace tradegap_order = 5 if hs2 == 52		
+	replace	tradegap_order = 6 if hs2 == 23		
+	replace tradegap_order = 7 if hs2 == 29		
+	replace tradegap_order = 8 if hs2 == 15		
+	replace tradegap_order = 9 if hs2 == 88		
+	replace tradegap_order = 10 if hs2 == 90
+	replace tradegap_order = 11 if hs2 == 30
+	
+	drop if tradegap_order==0
+		
+	gsort tradegap_order		
+	graph hbar lossUSD, ///		
+				over(hs2, sort(tradegap_order)) ///		
+				title("Tax revenue losses of Top 10 HS2 codes with greatest positive" "trade gaps, 2017") ///		
+				subtitle("(U.S. Dollars)") ///		
+				note("Using both import & tax data from FBR and export data from UN Comtrade") ///		
+				blabel(bar, position(outside) format(%15.0fc) color(black)) ///		
+				ytitle("") ///		
+				yscale(range(-300000000) off) ///		
+				ylabel(, nogrid) ///		
+				scheme(s1color)		
+			
+	graph export "$intermediate_results/Graphs/TaxLoss_FRB_ordered_10_11.png", as(png) height(800) replace	
+
+		
+	
+********************************************************************************
+********************************************************************************
+	
+	use "$onedrive/Mirror and desc stats/matched_hs6_10_1.dta", clear
+
+	
 	bys hs6 QT_code : gen trade_gap_hs6=log(tradevalueus)-log(imports_USD)
 	bys hs6 QT_code : gen weight_gap_hs6=log(altqtyunit)-log(quantity)
 
@@ -766,16 +908,98 @@
 	
 	// @KC: Try different permutations of these regs to see what's significant
 	eststo clear
-	reghdfe trade_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_hs6 av_total_taxes av_total_taxes_hs4, vce(cluster hs2) noabsorb
 	eststo reg_1
-	reghdfe weight_gap_hs6 av_total_taxes sd_total_taxes, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_hs6 av_total_taxes av_total_taxes_hs4, vce(cluster hs2) noabsorb
 	eststo reg_2
-	reghdfe trade_gap_hs6 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	reghdfe trade_gap_hs6 logavtaxes logavtaxes_hs4, vce(cluster hs2) noabsorb
 	eststo reg_3
-	reghdfe weight_gap_hs6 logavtaxes logsdtaxes, vce(cluster hs2) noabsorb
+	reghdfe weight_gap_hs6 logavtaxes logavtaxes_hs4, vce(cluster hs2) noabsorb
 	eststo reg_4
 
 	
 	esttab reg_1 reg_2 reg_3 reg_4 using ///
-		"$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_10_7.rtf", ///
+		"$intermediate_results/Tables/DeterminantsofGap_FBRComtrade_10_11.rtf", ///
+		label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
+
+
+*-------------------------------------------------------------------------------	
+*-------------------------------------------------------------------------------
+* 								COMTRADE-COMTRADE ANALYSIS
+*-------------------------------------------------------------------------------
+*-------------------------------------------------------------------------------
+
+
+/*------------------------------------------------------------------------------
+	Analysis at HS6 level
+*------------------------------------------------------------------------------*/	
+
+	use "$exports_data/ExportsToPK_clean.dta", clear
+	
+	drop if exp_year != 2017
+	collapse (sum) exp_netweightkg exp_altqtyunit exp_tradevalueus exp_unitprice_comtrade, by(hs6 QT_code)
+	sort hs6 QT_code
+	* This dataset has 5,819 observations
+	save "$exports_data/ExportsToPK2017_collapsehs6_QT_10_11.dta", replace
+	
+	
+	use "$imports_data/ImportsToPK_clean.dta", clear
+	
+	drop if imp_year != 2017
+	collapse (sum) imp_netweightkg imp_altqtyunit imp_tradevalueus imp_unitprice_comtrade, by(hs6 QT_code)
+	sort hs6 QT_code
+	* This dataset has 4,816 observations
+	save "$imports_data/ImportsToPK2017_collapsehs6_QT_10_11.dta", replace
+	
+	merge 1:1 hs6 QT_code using "$exports_data/ExportsToPK2017_collapsehs6_QT_10_11.dta"
+	* Matched: 1,320 | Not Matched: 352 (101 from imports, 251 from exports)
+	
+	replace exp_tradevalueus = 0 if exp_tradevalueus==.
+	replace imp_tradevalueus = 0 if imp_tradevalueus==.
+	replace exp_altqtyunit = 0 if exp_altqtyunit==.
+	replace imp_altqtyunit = 0 if imp_altqtyunit==.
+
+	bys hs6 QT_code: gen trade_gap_hs6=log(exp_tradevalueus)-log(imp_tradevalueus)
+	bys hs6 QT_code: gen weight_gap_hs6=log(exp_altqtyunit)-log(imp_altqtyunit)
+
+			
+	collapse (sum) trade_gap_hs6 weight_gap_hs6, by(hs6)
+	
+	save "$onedrive/Mirror and desc stats/matched_comtrade_hs6QT_10_11.dta", replace
+	
+	
+	use "$intermediate_data/TaxData_10_1.dta"
+	collapse (mean) total_taxes av_total_taxes, by(hs6)
+	sort hs6
+	merge 1:1 hs6 using "$onedrive/Mirror and desc stats/matched_comtrade_hs6QT_10_11.dta", generate(merge3)
+	* Matched: 1,154 | Not Matched: 55 (4 from check_prices_taxes, 51 from matched_comtrade_hs4QT_9_30)
+	
+	gen hs2=int(hs6/10000)
+
+	gen av_effective_tax = float(av_total_taxes/100)
+	bys hs6: gen lossUSD = av_effective_tax*trade_gap_hs6
+	
+	gen hs4 = int(hs6/100)
+	bys hs4: egen av_total_taxes_hs4 = mean(av_total_taxes)
+	
+	gen logavtaxes=log(av_total_taxes)
+	gen logtotaltaxes=log(total_taxes)
+	gen logavtaxes_hs4=log(av_total_taxes_hs4)
+	
+	save "$intermediate_data/preregression_10_11.dta", replace		
+				
+	// @KC: Try different permutations of these regs to see what's significant
+	eststo clear
+	reghdfe trade_gap_hs6 av_total_taxes av_total_taxes_hs4, vce(cluster hs2) noabsorb
+	eststo reg_1_comtrade
+	reghdfe weight_gap_hs6 av_total_taxes av_total_taxes_hs4, vce(cluster hs2) noabsorb
+	eststo reg_2_comtrade
+	reghdfe trade_gap_hs6 logavtaxes logavtaxes_hs4, vce(cluster hs2) noabsorb
+	eststo reg_3_comtrade
+	reghdfe weight_gap_hs6 logavtaxes logavtaxes_hs4, vce(cluster hs2) noabsorb
+	eststo reg_4_comtrade
+
+	
+	esttab reg_1_comtrade reg_2_comtrade reg_3_comtrade reg_4_comtrade using ///
+		"$intermediate_results/Tables/DeterminantsofGap_ComtradeOnly_10_11.rtf", ///
 		label r2 ar2 se star(* 0.10 ** 0.05 *** 0.01) replace nobaselevels style(tex)
