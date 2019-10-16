@@ -262,6 +262,15 @@
 	* Setting font for graphs to Times New Roman
 	graph set window fontface "Times New Roman"
 	
+	* Merge the data set containing the exchange rate variable
+	merge m:1 year month using "$initial_data/Exchange_rate.dta", gen(_Merge_Tax)
+/*	2,408 out of 3,406,177 not matched, out of which 2,398 from master and 10
+	from using.
+*/
+	drop if _Merge_Tax!=3
+	
+	gen imports_USD=import_export_value_rs/USDollar
+	
 	drop if co=="Afghanistan"
 	
 	save "$intermediate_data/PriceData_clean_hs6_10_1.dta", replace
@@ -272,15 +281,6 @@
 
 	use "$intermediate_data/PriceData_clean_hs6_10_1.dta", clear
 	
-
-	* Merge the data set containing the exchange rate variable
-	merge m:1 year month using "$initial_data/Exchange_rate.dta", gen(_Merge_Tax)
-/*	2,408 out of 3,406,177 not matched, out of which 2,398 from master and 10
-	from using.
-*/
-	drop if _Merge_Tax!=3
-	
-	gen imports_USD=import_export_value_rs/USDollar
 	
 //----
 	* Create the three categories required as a percent of original price

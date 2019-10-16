@@ -636,6 +636,8 @@
 **************************************************************************
 		
 	keep if outliers_3sd==1
+	
+	drop if co=="Afghanistan" //Just in case it wasn't done and saved before
 
 				*------------- BAR PLOTS BY MONTH -------------*
 		
@@ -658,7 +660,7 @@
 			xsize(6) ///
 			scheme(s1color)
 				
- graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_9_25.png", as(png) height(800) replace
+ graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_month_10_16.png", as(png) height(800) replace
 //----
 	* SUM OF ABSOLUTE VALUE OF % DEVIATIONS FROM THE MEAN BY MONTH
 	
@@ -673,7 +675,7 @@
 			xsize(6) ///
 			scheme(s1color)
 
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_month_year_10_16.png", as(png) height(800) replace
 	restore
 	
 	
@@ -693,12 +695,12 @@
 			title("Top 10 sheds with most number of" "outlier deviations from average price") ///
 			blabel(bar, position(outside) format(%9.0fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(60000) off) ///
+			yscale(range(120000) off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_shed_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_shed_10_16.png", as(png) height(800) replace
 	
   gsort - abs_dev2
 	* Graph top 10 Sheds by sum of deviation 
@@ -707,12 +709,12 @@
 			title("Top 10 sheds with biggest sums of" "outlier deviations from average prices") ///
 			blabel(bar, position(outside) format(%10.3fc) color(black)) ///
 			ytitle("") ///
-			yscale(range(18000) off) ///
+			yscale(range(19000) off) ///
 			ylabel(, nogrid) ///
 			xsize(6) ///
 			scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/Price_absdev_shed_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/Price_absdev_shed_10_16.png", as(png) height(800) replace
 	
 	restore
 	
@@ -733,7 +735,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_co_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_co_10_16.png", as(png) height(800) replace
 	
 	gsort -abs_dev2
 		
@@ -747,7 +749,7 @@
 			ylabel(, nogrid) ///
 			scheme(s1color)
        
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_co_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_co_10_16.png", as(png) height(800) replace
 	restore
 
 				*------------- BAR PLOTS BY HS2 CODE -------------*
@@ -769,7 +771,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2_10_16.png", as(png) height(800) replace
 	
 	
 	gsort -abs_dev2
@@ -783,7 +785,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2_10_16.png", as(png) height(800) replace
 	
 	restore
 	
@@ -804,7 +806,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2gap_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/PriceCheck_o_3sd_hs2gap_10_16.png", as(png) height(800) replace
 		
 	
 	gsort -abs_dev2
@@ -818,7 +820,7 @@
 				ylabel(, nogrid) ///
 				scheme(s1color)
 	
-	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2gap_9_25.png", as(png) height(800) replace
+	graph export "$intermediate_results/Graphs/PriceCheck_absdev_hs2gap_10_16.png", as(png) height(800) replace
 		
 	restore
 
