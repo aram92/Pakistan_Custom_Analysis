@@ -343,7 +343,16 @@
 	bys hs4 yearmonth: gen abs_dev= abs(unit_price_USD-av_unitprice)
   sort hs4 year co QT_code
   save "$intermediate_data/check_prices.dta", replace
+  
+  graph hbar (count) unit_price, over(yearmonth) ///
+			title("Number declarations per month in the import data") ///
+			blabel(bar, position(outside) format(%9.0fc) color(black)) ///
+			ytitle("") ///
+			yscale(range(350000) off) ///
+			ylabel(, nogrid) ///
+			scheme(s1color)
 	
+	graph export "$intermediate_results/Graphs/summary_stats_yearmonth.png", as(png) height(800) replace
 	
 * ---------------------------------------------------------------------------- *
 * Use export data to generate reference price #2
@@ -520,7 +529,7 @@
 	replace hs2=int(hs4/100)
 	
 	* Generate frequency distribution tables to see the distribution of unmatched data from the merge
-	asdoc tab1 year shed_code hs2 co_code if merge2==2, replace label save(Price_check_Freq_Dist_9_25.rtf)
+	asdoc tab1 yearmonth shed_code hs2 co_code if merge2==2, replace label save(Price_check_Freq_Dist_11_182.rtf)
 
 	save "$intermediate_data/Price_check_graphs.dta", replace
 
